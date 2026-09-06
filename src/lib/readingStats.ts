@@ -1,3 +1,9 @@
+const TRACKING_START_DATE = '2026-09-06'
+
+export function getTrackingStartDate(): string {
+  return TRACKING_START_DATE
+}
+
 export function getTodayDate(): string {
   const today = new Date()
 
@@ -29,9 +35,18 @@ export function calculateCurrentStreak(
 
   const uniqueDates = Array.from(
     new Set(
-      entries.map((entry) => entry.reading_date)
+      entries
+        .map((entry) => entry.reading_date)
+        .filter(
+          (date) =>
+            date >= TRACKING_START_DATE
+        )
     )
   ).sort((a, b) => b.localeCompare(a))
+
+  if (uniqueDates.length === 0) {
+    return 0
+  }
 
   const today = getTodayDate()
 
@@ -53,8 +68,17 @@ export function calculateCurrentStreak(
     const previousDate = uniqueDates[index - 1]
     const currentDate = uniqueDates[index]
 
+    // Never allow the streak calculation to move
+    // before the official MicroRead tracking date.
     if (
-      currentDate === getPreviousDate(previousDate)
+      currentDate < TRACKING_START_DATE
+    ) {
+      break
+    }
+
+    if (
+      currentDate ===
+      getPreviousDate(previousDate)
     ) {
       streak++
     } else {
