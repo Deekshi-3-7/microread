@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 type Member = {
@@ -353,12 +354,12 @@ export default function Settings() {
               </p>
             </div>
 
-            <a
-              href="/admin"
+            <Link
+              to="/admin"
               className="inline-flex items-center justify-center rounded-xl bg-purple-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-purple-800"
             >
               Open Admin
-            </a>
+            </Link>
           </div>
         </section>
       )}
