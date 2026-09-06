@@ -268,6 +268,20 @@ export default function Home() {
     return `${year}-${month}-${day}`
   }
 
+  function getGreeting(): string {
+    const hour = new Date().getHours()
+
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning'
+    }
+
+    if (hour >= 12 && hour < 17) {
+      return 'Good afternoon'
+    }
+
+    return 'Good evening'
+  }
+
   function getProgressPercentage(): number {
     if (
       !currentBook ||
@@ -313,7 +327,7 @@ export default function Home() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
-          Good morning,{' '}
+          {getGreeting()},{' '}
           {member?.name || 'Reader'} 👋
         </h1>
 
