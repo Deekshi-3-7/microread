@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 type Member = {
@@ -27,10 +28,17 @@ type ReadingEntry = {
 
 export default function Home() {
   const [member, setMember] = useState<Member | null>(null)
-  const [currentBook, setCurrentBook] = useState<Book | null>(null)
-  const [todayEntry, setTodayEntry] = useState<ReadingEntry | null>(null)
-  const [currentStreak, setCurrentStreak] = useState(0)
-  const [friendCount, setFriendCount] = useState(0)
+  const [currentBook, setCurrentBook] =
+    useState<Book | null>(null)
+
+  const [todayEntry, setTodayEntry] =
+    useState<ReadingEntry | null>(null)
+
+  const [currentStreak, setCurrentStreak] =
+    useState(0)
+
+  const [friendCount, setFriendCount] =
+    useState(0)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -52,12 +60,14 @@ export default function Home() {
         throw new Error('You are not logged in.')
       }
 
-      const { data: memberData, error: memberError } =
-        await supabase
-          .from('members')
-          .select('id, name')
-          .eq('auth_user_id', user.id)
-          .single()
+      const {
+        data: memberData,
+        error: memberError,
+      } = await supabase
+        .from('members')
+        .select('id, name')
+        .eq('auth_user_id', user.id)
+        .single()
 
       if (memberError) {
         throw memberError
@@ -67,15 +77,23 @@ export default function Home() {
 
       const today = getTodayDate()
 
-      /*
-       * Load the small amount of information needed
-       * for the Home dashboard.
-       */
       const [
-        { data: bookData, error: bookError },
-        { data: todayData, error: todayError },
-        { data: readingData, error: readingError },
-        { count: membersCount, error: membersError },
+        {
+          data: bookData,
+          error: bookError,
+        },
+        {
+          data: todayData,
+          error: todayError,
+        },
+        {
+          data: readingData,
+          error: readingError,
+        },
+        {
+          count: membersCount,
+          error: membersError,
+        },
       ] = await Promise.all([
         supabase
           .from('books')
@@ -84,7 +102,9 @@ export default function Home() {
           )
           .eq('member_id', memberData.id)
           .eq('status', 'reading')
-          .order('created_at', { ascending: false })
+          .order('created_at', {
+            ascending: false,
+          })
           .limit(1),
 
         supabase
@@ -100,11 +120,16 @@ export default function Home() {
           .from('reading_entries')
           .select('reading_date')
           .eq('member_id', memberData.id)
-          .order('reading_date', { ascending: false }),
+          .order('reading_date', {
+            ascending: false,
+          }),
 
         supabase
           .from('members')
-          .select('id', { count: 'exact', head: true })
+          .select('id', {
+            count: 'exact',
+            head: true,
+          })
           .eq('active', true),
       ])
 
@@ -127,19 +152,25 @@ export default function Home() {
       setCurrentBook(bookData?.[0] || null)
       setTodayEntry(todayData?.[0] || null)
 
-      /*
-       * Don't count the current user as a friend.
-       */
-      setFriendCount(Math.max((membersCount || 1) - 1, 0))
+      setFriendCount(
+        Math.max((membersCount || 1) - 1, 0)
+      )
 
-      setCurrentStreak(calculateCurrentStreak(readingData || []))
+      setCurrentStreak(
+        calculateCurrentStreak(readingData || [])
+      )
     } catch (err) {
-      console.error('Home dashboard error:', err)
+      console.error(
+        'Home dashboard error:',
+        err
+      )
 
       if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('Unable to load your dashboard.')
+        setError(
+          'Unable to load your dashboard.'
+        )
       }
     } finally {
       setLoading(false)
@@ -154,29 +185,39 @@ export default function Home() {
     }
 
     const uniqueDates = Array.from(
-      new Set(entries.map((entry) => entry.reading_date))
+      new Set(
+        entries.map(
+          (entry) => entry.reading_date
+        )
+      )
     ).sort((a, b) => b.localeCompare(a))
 
     const today = getTodayDate()
 
-    /*
-     * A current streak can start today or yesterday.
-     */
     if (
       uniqueDates[0] !== today &&
-      uniqueDates[0] !== getPreviousDate(today)
+      uniqueDates[0] !==
+        getPreviousDate(today)
     ) {
       return 0
     }
 
     let streak = 1
 
-    for (let index = 1; index < uniqueDates.length; index++) {
-      const previousDate = uniqueDates[index - 1]
-      const currentDate = uniqueDates[index]
+    for (
+      let index = 1;
+      index < uniqueDates.length;
+      index++
+    ) {
+      const previousDate =
+        uniqueDates[index - 1]
+
+      const currentDate =
+        uniqueDates[index]
 
       if (
-        currentDate === getPreviousDate(previousDate)
+        currentDate ===
+        getPreviousDate(previousDate)
       ) {
         streak++
       } else {
@@ -191,25 +232,47 @@ export default function Home() {
     const today = new Date()
 
     const year = today.getFullYear()
-    const month = String(today.getMonth() + 1).padStart(2, '0')
-    const day = String(today.getDate()).padStart(2, '0')
+
+    const month = String(
+      today.getMonth() + 1
+    ).padStart(2, '0')
+
+    const day = String(
+      today.getDate()
+    ).padStart(2, '0')
 
     return `${year}-${month}-${day}`
   }
 
-  function getPreviousDate(dateString: string): string {
-    const date = new Date(`${dateString}T00:00:00`)
-    date.setDate(date.getDate() - 1)
+  function getPreviousDate(
+    dateString: string
+  ): string {
+    const date = new Date(
+      `${dateString}T00:00:00`
+    )
+
+    date.setDate(
+      date.getDate() - 1
+    )
 
     const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
+
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, '0')
+
+    const day = String(
+      date.getDate()
+    ).padStart(2, '0')
 
     return `${year}-${month}-${day}`
   }
 
   function getProgressPercentage(): number {
-    if (!currentBook || currentBook.total_pages <= 0) {
+    if (
+      !currentBook ||
+      currentBook.total_pages <= 0
+    ) {
       return 0
     }
 
@@ -243,22 +306,23 @@ export default function Home() {
     )
   }
 
-  const progress = getProgressPercentage()
+  const progress =
+    getProgressPercentage()
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      {/* Greeting */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
-          Good morning, {member?.name || 'Reader'} 👋
+          Good morning,{' '}
+          {member?.name || 'Reader'} 👋
         </h1>
 
         <p className="mt-2 text-gray-600">
-          Small pages. Daily steps. Lasting growth.
+          Small pages. Daily steps. Lasting
+          growth.
         </p>
       </div>
 
-      {/* Today's Reading */}
       <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-6">
           <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -276,7 +340,9 @@ export default function Home() {
           <>
             <div className="rounded-2xl bg-gray-50 p-5">
               <div className="flex items-start gap-4">
-                <div className="text-3xl">📖</div>
+                <div className="text-3xl">
+                  📖
+                </div>
 
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xl font-bold text-gray-900">
@@ -290,7 +356,9 @@ export default function Home() {
                   <div className="mt-5">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium text-gray-700">
-                        Page {currentBook.current_page} of{' '}
+                        Page{' '}
+                        {currentBook.current_page}{' '}
+                        of{' '}
                         {currentBook.total_pages}
                       </span>
 
@@ -315,7 +383,9 @@ export default function Home() {
             {todayEntry ? (
               <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">✅</span>
+                  <span className="text-xl">
+                    ✅
+                  </span>
 
                   <p className="font-semibold text-green-800">
                     Today's reading is complete
@@ -324,46 +394,50 @@ export default function Home() {
 
                 <p className="mt-2 text-sm text-green-700">
                   {todayEntry.minutes} min ·{' '}
-                  {todayEntry.pages_read} pages
+                  {todayEntry.pages_read}{' '}
+                  pages
                 </p>
 
                 <p className="mt-1 text-sm text-green-700">
-                  Page {todayEntry.start_page} →{' '}
+                  Page{' '}
+                  {todayEntry.start_page} →{' '}
                   {todayEntry.end_page}
                 </p>
               </div>
             ) : (
-              <a
-                href="/reading"
+              <Link
+                to="/reading"
                 className="mt-5 flex w-full items-center justify-center rounded-2xl bg-gray-900 px-6 py-4 text-base font-semibold text-white transition hover:bg-gray-800"
               >
                 ➕ Update Today's Reading
-              </a>
+              </Link>
             )}
           </>
         ) : (
           <div className="rounded-2xl bg-gray-50 p-6 text-center">
-            <div className="text-4xl">📚</div>
+            <div className="text-4xl">
+              📚
+            </div>
 
             <h3 className="mt-3 font-semibold text-gray-900">
               Start your reading journey
             </h3>
 
             <p className="mt-1 text-sm text-gray-500">
-              Add a book and take your first small step.
+              Add a book and take your first
+              small step.
             </p>
 
-            <a
-              href="/books"
+            <Link
+              to="/books"
               className="mt-4 inline-flex rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800"
             >
               + Add a Book
-            </a>
+            </Link>
           </div>
         )}
       </section>
 
-      {/* Small Progress Row */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
@@ -372,7 +446,9 @@ export default function Home() {
 
           <p className="mt-2 text-2xl font-bold text-gray-900">
             🔥 {currentStreak}{' '}
-            {currentStreak === 1 ? 'day' : 'days'}
+            {currentStreak === 1
+              ? 'day'
+              : 'days'}
           </p>
 
           <p className="mt-1 text-sm text-gray-500">
@@ -386,7 +462,10 @@ export default function Home() {
           </p>
 
           <p className="mt-2 text-2xl font-bold text-gray-900">
-            👥 {friendCount} {friendCount === 1 ? 'friend' : 'friends'}
+            👥 {friendCount}{' '}
+            {friendCount === 1
+              ? 'friend'
+              : 'friends'}
           </p>
 
           <p className="mt-1 text-sm text-gray-500">
@@ -395,7 +474,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* One Small Step */}
       <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 text-center">
         <p className="text-sm font-semibold text-gray-500">
           🌱 Your next small step
@@ -408,10 +486,10 @@ export default function Home() {
         </p>
 
         <p className="mt-2 text-sm text-gray-500">
-          You don't need to read a lot. Just keep the habit alive.
+          You don't need to read a lot. Just
+          keep the habit alive.
         </p>
       </section>
     </div>
   )
 }
-

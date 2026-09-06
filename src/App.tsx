@@ -6,9 +6,7 @@ import {
   Route,
   Routes,
   useLocation,
-  useNavigate,
 } from 'react-router-dom'
-
 import { supabase } from './lib/supabase'
 
 import Home from './pages/Home'
@@ -28,189 +26,121 @@ type Member = {
   email: string
   role: 'admin' | 'member'
   active: boolean
-  auth_user_id: string | null
 }
 
-type NavItem = {
-  label: string
+type SidebarItem = {
   path: string
+  label: string
   icon: string
 }
 
-const navItems: NavItem[] = [
+const sidebarItems: SidebarItem[] = [
   {
-    label: 'Home',
     path: '/',
+    label: 'Home',
     icon: '🏠',
   },
   {
-    label: 'My Reading',
     path: '/reading',
+    label: 'My Reading',
     icon: '📖',
   },
   {
-    label: 'Books',
     path: '/books',
+    label: 'Books',
     icon: '📚',
   },
   {
-    label: 'Friends',
     path: '/friends',
+    label: 'Friends',
     icon: '👥',
   },
   {
-    label: 'Insights',
     path: '/insights',
+    label: 'Insights',
     icon: '📊',
   },
   {
-    label: 'Milestones',
     path: '/milestones',
+    label: 'Milestones',
     icon: '🏆',
   },
   {
-    label: 'Settings',
     path: '/settings',
+    label: 'Settings',
     icon: '⚙️',
   },
 ]
 
-function App() {
+function SidebarLink({
+  item,
+}: {
+  item: SidebarItem
+}) {
+  const location = useLocation()
+
+  const isActive =
+    item.path === '/'
+      ? location.pathname === '/'
+      : location.pathname === item.path ||
+        location.pathname.startsWith(`${item.path}/`)
+
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <Link
+      to={item.path}
+      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+        isActive
+          ? 'bg-gray-900 text-white'
+          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+      }`}
+    >
+      <span>{item.icon}</span>
+      <span>{item.label}</span>
+    </Link>
   )
 }
 
-function AppContent() {
-  const [member, setMember] = useState<Member | null>(null)
-  const [loading, setLoading] = useState(true)
+function MobileNavLink({
+  item,
+}: {
+  item: SidebarItem
+}) {
+  const location = useLocation()
 
-  useEffect(() => {
-    loadMember()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      loadMember()
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  async function loadMember() {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        setMember(null)
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('members')
-        .select(
-          'id, name, email, role, active, auth_user_id'
-        )
-        .eq('auth_user_id', user.id)
-        .single()
-
-      if (error) {
-        console.error('Unable to load member:', error)
-        setMember(null)
-      } else {
-        setMember(data)
-        console.log('Logged-in member:', data)
-      }
-    } catch (error) {
-      console.error('Authentication error:', error)
-      setMember(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-500">
-          Loading MicroRead...
-        </p>
-      </div>
-    )
-  }
-
-  if (!member) {
-    return <LoginPage />
-  }
-
-  if (!member.active) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
-          <div className="text-4xl">🌱</div>
-
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">
-            Account inactive
-          </h1>
-
-          <p className="mt-2 text-gray-500">
-            Your MicroRead account is currently inactive.
-          </p>
-
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-            }}
-            className="mt-6 rounded-xl bg-gray-900 px-5 py-3 font-semibold text-white hover:bg-gray-800"
-          >
-            Log Out
-          </button>
-        </div>
-      </div>
-    )
-  }
+  const isActive =
+    item.path === '/'
+      ? location.pathname === '/'
+      : location.pathname === item.path ||
+        location.pathname.startsWith(`${item.path}/`)
 
   return (
-    <AppLayout
-      member={member}
-      onMemberRefresh={loadMember}
-    />
+    <Link
+      to={item.path}
+      className={`flex min-w-[72px] flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium ${
+        isActive
+          ? 'bg-gray-900 text-white'
+          : 'text-gray-500'
+      }`}
+    >
+      <span className="text-lg">{item.icon}</span>
+      <span>{item.label}</span>
+    </Link>
   )
 }
 
-function AppLayout({
+function AppContent({
   member,
-  onMemberRefresh,
+  onLogout,
 }: {
   member: Member
-  onMemberRefresh: () => Promise<void>
+  onLogout: () => Promise<void>
 }) {
-  const navigate = useNavigate()
-
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    await onMemberRefresh()
-    navigate('/')
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex min-h-screen">
-        {/* Sidebar */}
-        <aside className="hidden w-64 flex-col border-r border-gray-200 bg-white md:flex">
-          {/* Logo */}
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white lg:block">
+        <div className="flex h-full flex-col">
           <div className="border-b border-gray-200 px-6 py-6">
-            <Link
-              to="/"
-              className="block"
-            >
+            <Link to="/" className="block">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🌱</span>
 
@@ -220,171 +150,79 @@ function AppLayout({
                   </h1>
 
                   <p className="text-xs text-gray-500">
-                    Small steps. Lasting growth.
+                    Small pages. Daily steps.
                   </p>
                 </div>
               </div>
             </Link>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-3 py-5">
-            {navItems.map((item) => (
+          <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+            {sidebarItems.map((item) => (
               <SidebarLink
                 key={item.path}
                 item={item}
               />
             ))}
 
-            {/* Admin */}
             {member.role === 'admin' && (
-              <div className="mt-6 border-t border-gray-200 pt-5">
-                <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  Administration
-                </p>
+              <>
+                <div className="px-4 pb-2 pt-6">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    Administration
+                  </p>
+                </div>
 
                 <SidebarLink
                   item={{
-                    label: 'Admin',
                     path: '/admin',
+                    label: 'Admin',
                     icon: '🛠️',
                   }}
                 />
-
-                <SidebarLink
-                  item={{
-                    label: 'Admin Books',
-                    path: '/admin/books',
-                    icon: '📚',
-                  }}
-                />
-
-                <SidebarLink
-                  item={{
-                    label: 'Reading Data',
-                    path: '/admin/reading',
-                    icon: '📊',
-                  }}
-                />
-              </div>
+              </>
             )}
           </nav>
 
-          {/* User section */}
           <div className="border-t border-gray-200 p-4">
-            <div className="rounded-xl bg-gray-50 p-3">
-              <p className="truncate text-sm font-semibold text-gray-900">
+            <div className="mb-3 rounded-xl bg-gray-50 p-3">
+              <p className="text-sm font-semibold text-gray-900">
                 {member.name}
               </p>
 
-              <p className="mt-1 text-xs capitalize text-gray-500">
-                {member.role}
+              <p className="mt-1 truncate text-xs text-gray-500">
+                {member.email}
+              </p>
+
+              <p className="mt-2 text-xs font-medium text-gray-500">
+                {member.role === 'admin'
+                  ? 'Administrator'
+                  : 'Member'}
               </p>
             </div>
 
             <button
-              onClick={handleLogout}
-              className="mt-3 w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+              onClick={onLogout}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
             >
               Log Out
             </button>
-          </div>
-        </aside>
-
-        {/* Mobile header */}
-        <div className="fixed left-0 right-0 top-0 z-50 border-b border-gray-200 bg-white md:hidden">
-          <div className="flex items-center justify-between px-4 py-3">
-            <Link
-              to="/"
-              className="flex items-center gap-2"
-            >
-              <span className="text-xl">🌱</span>
-
-              <span className="font-bold text-gray-900">
-                MicroRead
-              </span>
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
-            >
-              Log Out
-            </button>
-          </div>
-
-          {/* Mobile navigation */}
-          <div className="overflow-x-auto border-t border-gray-100">
-            <nav className="flex min-w-max gap-1 px-3 py-2">
-              {navItems.map((item) => (
-                <MobileNavLink
-                  key={item.path}
-                  item={item}
-                />
-              ))}
-
-              {member.role === 'admin' && (
-                <>
-                  <MobileNavLink
-                    item={{
-                      label: 'Admin',
-                      path: '/admin',
-                      icon: '🛠️',
-                    }}
-                  />
-
-                  <MobileNavLink
-                    item={{
-                      label: 'Reading Data',
-                      path: '/admin/reading',
-                      icon: '📊',
-                    }}
-                  />
-                </>
-              )}
-            </nav>
           </div>
         </div>
+      </aside>
 
-        {/* Main content */}
-        <main className="min-w-0 flex-1 px-4 pb-8 pt-32 sm:px-6 md:px-8 md:pt-8">
+      <main className="pb-24 lg:ml-64 lg:pb-0">
+        <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <Routes>
-            <Route
-              path="/"
-              element={<Home />}
-            />
+            <Route path="/" element={<Home />} />
+            <Route path="/reading" element={<Reading />} />
+            <Route path="/books" element={<Books />} />
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/insights" element={<Insights />} />
+            <Route path="/milestones" element={<Milestones />} />
+            <Route path="/settings" element={<Settings />} />
 
-            <Route
-              path="/reading"
-              element={<Reading />}
-            />
-
-            <Route
-              path="/books"
-              element={<Books />}
-            />
-
-            <Route
-              path="/friends"
-              element={<Friends />}
-            />
-
-            <Route
-              path="/insights"
-              element={<Insights />}
-            />
-
-            <Route
-              path="/milestones"
-              element={<Milestones />}
-            />
-
-            <Route
-              path="/settings"
-              element={<Settings />}
-            />
-
-            {member.role === 'admin' && (
+            {member.role === 'admin' ? (
               <>
                 <Route
                   path="/admin"
@@ -401,6 +239,11 @@ function AppLayout({
                   element={<AdminReading />}
                 />
               </>
+            ) : (
+              <Route
+                path="/admin/*"
+                element={<Navigate to="/" replace />}
+              />
             )}
 
             <Route
@@ -408,79 +251,28 @@ function AppLayout({
               element={<Navigate to="/" replace />}
             />
           </Routes>
-        </main>
-      </div>
+        </div>
+      </main>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white lg:hidden">
+        <div className="flex items-center justify-around overflow-x-auto px-2 py-2">
+          {sidebarItems.slice(0, 5).map((item) => (
+            <MobileNavLink
+              key={item.path}
+              item={item}
+            />
+          ))}
+
+          <MobileNavLink
+            item={{
+              path: '/settings',
+              label: 'Settings',
+              icon: '⚙️',
+            }}
+          />
+        </div>
+      </nav>
     </div>
-  )
-}
-
-/*
- * Desktop sidebar link
- *
- * IMPORTANT:
- * We use useLocation() here to determine
- * which page is currently open.
- */
-function SidebarLink({
-  item,
-}: {
-  item: NavItem
-}) {
-  const location = useLocation()
-
-  const isActive =
-    item.path === '/'
-      ? location.pathname === '/'
-      : location.pathname === item.path ||
-        location.pathname.startsWith(`${item.path}/`)
-
-  return (
-    <Link
-      to={item.path}
-      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
-        isActive
-          ? 'bg-gray-100 text-gray-900'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-      }`}
-    >
-      <span className="text-lg">
-        {item.icon}
-      </span>
-
-      <span>{item.label}</span>
-    </Link>
-  )
-}
-
-/*
- * Mobile navigation link
- */
-function MobileNavLink({
-  item,
-}: {
-  item: NavItem
-}) {
-  const location = useLocation()
-
-  const isActive =
-    item.path === '/'
-      ? location.pathname === '/'
-      : location.pathname === item.path ||
-        location.pathname.startsWith(`${item.path}/`)
-
-  return (
-    <Link
-      to={item.path}
-      className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
-        isActive
-          ? 'bg-gray-100 text-gray-900'
-          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-      }`}
-    >
-      <span>{item.icon}</span>
-
-      <span>{item.label}</span>
-    </Link>
   )
 }
 
@@ -512,17 +304,17 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
           <div className="text-center">
             <div className="text-4xl">🌱</div>
 
-            <h1 className="mt-4 text-3xl font-bold text-gray-900">
+            <h1 className="mt-3 text-3xl font-bold text-gray-900">
               MicroRead
             </h1>
 
-            <p className="mt-2 text-gray-500">
+            <p className="mt-2 text-sm text-gray-500">
               Small pages. Daily steps. Lasting growth.
             </p>
           </div>
@@ -532,41 +324,49 @@ function LoginPage() {
             className="mt-8 space-y-5"
           >
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
                 Email
               </label>
 
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(event) =>
                   setEmail(event.target.value)
                 }
                 required
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-gray-500"
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-200"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
 
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(event) =>
                   setPassword(event.target.value)
                 }
                 required
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-gray-500"
-                placeholder="Your password"
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-200"
+                placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {error}
               </div>
             )}
@@ -574,7 +374,7 @@ function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-gray-900 px-5 py-3 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-xl bg-gray-900 px-4 py-3 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Logging in...' : 'Log In'}
             </button>
@@ -585,5 +385,144 @@ function LoginPage() {
   )
 }
 
-export default App
+function App() {
+  const [member, setMember] = useState<Member | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
+  useEffect(() => {
+    loadMember()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      loadMember()
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  async function loadMember() {
+    setLoading(true)
+    setError('')
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        setMember(null)
+        setLoading(false)
+        return
+      }
+
+      const { data, error: memberError } =
+        await supabase
+          .from('members')
+          .select(
+            'id, name, email, role, active'
+          )
+          .eq('auth_user_id', user.id)
+          .single()
+
+      if (memberError) {
+        throw memberError
+      }
+
+      setMember(data)
+    } catch (err) {
+      console.error('Unable to load member:', err)
+
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Unable to load member.')
+      }
+
+      setMember(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    setMember(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="text-gray-500">
+          Loading MicroRead...
+        </p>
+      </div>
+    )
+  }
+
+  if (!member) {
+    return (
+      <BrowserRouter basename="/microread">
+        {error ? (
+          <div className="min-h-screen bg-gray-50 px-4 py-6">
+            <div className="mx-auto max-w-md rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+              <p className="font-semibold">
+                Unable to load member
+              </p>
+
+              <p className="mt-2 text-sm">
+                {error}
+              </p>
+
+              <div className="mt-4">
+                <LoginPage />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <LoginPage />
+        )}
+      </BrowserRouter>
+    )
+  }
+
+  if (!member.active) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="text-4xl">🌱</div>
+
+          <h1 className="mt-4 text-2xl font-bold text-gray-900">
+            Account inactive
+          </h1>
+
+          <p className="mt-3 text-sm text-gray-500">
+            Your MicroRead account is currently inactive.
+            Please contact the administrator.
+          </p>
+
+          <button
+            onClick={handleLogout}
+            className="mt-6 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white"
+          >
+            Log Out
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <BrowserRouter basename="/microread">
+      <AppContent
+        member={member}
+        onLogout={handleLogout}
+      />
+    </BrowserRouter>
+  )
+}
+
+export default App
