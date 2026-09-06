@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <script>
+      const path = window.location.pathname
+
+      const repo = '/microread'
+
+      if (path.startsWith(repo)) {
+        const route = path.slice(repo.length)
+
+        const query = window.location.search
+        const hash = window.location.hash
+
+        window.location.replace(
+          repo +
+          '/?redirect=' +
+          encodeURIComponent(route) +
+          encodeURIComponent(query) +
+          encodeURIComponent(hash)
+        )
+      } else {
+        window.location.replace('/')
+      }
+    </script>
+
+    <title>MicroRead</title>
+  </head>
+
+  <body>
+    <p>Loading MicroRead...</p>
+  </body>
+</html>
