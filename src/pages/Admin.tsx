@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 type Member = {
@@ -328,6 +329,41 @@ export default function Admin() {
         >
           ➕ Add Member
         </button>
+      </div>
+
+      {/* Admin navigation */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link
+          to="/admin/books"
+          className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+        >
+          <div>
+            <p className="text-lg font-semibold text-gray-900">
+              📚 Book Management
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              View and edit every member's books.
+            </p>
+          </div>
+
+          <span className="text-gray-400">→</span>
+        </Link>
+
+        <Link
+          to="/admin/reading"
+          className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+        >
+          <div>
+            <p className="text-lg font-semibold text-gray-900">
+              📊 Reading Data
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              View and correct reading entries.
+            </p>
+          </div>
+
+          <span className="text-gray-400">→</span>
+        </Link>
       </div>
 
       {/* Messages */}
