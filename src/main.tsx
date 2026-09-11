@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useEffect } from 'react'
 import App from './App'
+import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
 
 function RedirectHandler() {
@@ -33,6 +34,8 @@ createRoot(
   document.getElementById('root')!
 ).render(
   <StrictMode>
-    <RedirectHandler />
+    <ErrorBoundary>
+      <RedirectHandler />
+    </ErrorBoundary>
   </StrictMode>
 )

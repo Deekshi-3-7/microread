@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { computeCurrentPageFromHistory } from '../lib/books'
 
 type Member = {
   id: string
@@ -321,12 +323,29 @@ export default function AdminBooks() {
     }
 
     try {
+      /*
+       * Reopening a completed book restores the real page from
+       * reading history (finishing had overwritten current_page with
+       * total_pages). Completing jumps to the last page; pausing or
+       * resuming leaves the current page untouched.
+       */
+      let nextCurrentPage = book.current_page
+
+      if (newStatus === 'completed') {
+        nextCurrentPage = book.total_pages
+      } else if (
+        newStatus === 'reading' &&
+        book.status === 'completed'
+      ) {
+        nextCurrentPage = await computeCurrentPageFromHistory(
+          book.id,
+          book.starting_page
+        )
+      }
+
       const updateData = {
         status: newStatus,
-        current_page:
-          newStatus === 'completed'
-            ? book.total_pages
-            : book.current_page,
+        current_page: nextCurrentPage,
         completion_date:
           newStatus === 'completed' ? getTodayDate() : null,
         updated_at: new Date().toISOString(),
@@ -412,6 +431,13 @@ export default function AdminBooks() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <Link
+        to="/admin"
+        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-gray-900"
+      >
+        ← Back to Admin
+      </Link>
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

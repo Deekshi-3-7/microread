@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { calculateCurrentStreak } from '../lib/readingStats'
+import {
+  calculateCurrentStreak,
+  getPreviousDate,
+  getTrackingStartDate,
+} from '../lib/readingStats'
 
 type Member = {
   id: string
@@ -27,6 +31,11 @@ type ReadingEntry = {
   book_id: string
 }
 
+type Goal = {
+  goal_type: 'minutes' | 'pages'
+  target: number
+}
+
 export default function Home() {
   const [member, setMember] = useState<Member | null>(null)
   const [currentBook, setCurrentBook] =
@@ -35,11 +44,26 @@ export default function Home() {
   const [todayEntry, setTodayEntry] =
     useState<ReadingEntry | null>(null)
 
+  const [goal, setGoal] =
+    useState<Goal | null>(null)
+
+  const [todayMinutes, setTodayMinutes] =
+    useState(0)
+
+  const [todayPages, setTodayPages] =
+    useState(0)
+
   const [currentStreak, setCurrentStreak] =
     useState(0)
 
+  const [readingDates, setReadingDates] =
+    useState<string[]>([])
+
   const [friendCount, setFriendCount] =
     useState(0)
+
+  const [showStreakInfo, setShowStreakInfo] =
+    useState(false)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -95,6 +119,10 @@ export default function Home() {
           count: membersCount,
           error: membersError,
         },
+        {
+          data: goalData,
+          error: goalError,
+        },
       ] = await Promise.all([
         supabase
           .from('books')
@@ -114,8 +142,7 @@ export default function Home() {
             'id, reading_date, start_page, end_page, pages_read, minutes, book_id'
           )
           .eq('member_id', memberData.id)
-          .eq('reading_date', today)
-          .limit(1),
+          .eq('reading_date', today),
 
         supabase
           .from('reading_entries')
@@ -132,6 +159,14 @@ export default function Home() {
             head: true,
           })
           .eq('active', true),
+
+        supabase
+          .from('goals')
+          .select('goal_type, target')
+          .eq('member_id', memberData.id)
+          .eq('active', true)
+          .limit(1)
+          .maybeSingle(),
       ])
 
       if (bookError) {
@@ -150,8 +185,33 @@ export default function Home() {
         throw membersError
       }
 
+      if (goalError) {
+        throw goalError
+      }
+
+      const todayList =
+        (todayData ?? []) as ReadingEntry[]
+
       setCurrentBook(bookData?.[0] || null)
-      setTodayEntry(todayData?.[0] || null)
+      setTodayEntry(todayList[0] || null)
+      setGoal(goalData ?? null)
+
+      setTodayMinutes(
+        todayList.reduce(
+          (total, entry) =>
+            total + Number(entry.minutes || 0),
+          0
+        )
+      )
+
+      setTodayPages(
+        todayList.reduce(
+          (total, entry) =>
+            total +
+            Number(entry.pages_read || 0),
+          0
+        )
+      )
 
       setFriendCount(
         Math.max((membersCount || 1) - 1, 0)
@@ -159,6 +219,16 @@ export default function Home() {
 
       setCurrentStreak(
         calculateCurrentStreak(readingData || [])
+      )
+
+      setReadingDates(
+        Array.from(
+          new Set(
+            (readingData || []).map(
+              (entry) => entry.reading_date
+            )
+          )
+        )
       )
     } catch (err) {
       console.error(
@@ -248,6 +318,40 @@ export default function Home() {
 
   const progress =
     getProgressPercentage()
+
+  const goalCurrent = goal
+    ? goal.goal_type === 'minutes'
+      ? todayMinutes
+      : todayPages
+    : 0
+
+  const goalProgress =
+    goal && goal.target > 0
+      ? Math.min(
+          Math.round(
+            (goalCurrent / goal.target) * 100
+          ),
+          100
+        )
+      : 0
+
+  const goalMet = goal
+    ? goalCurrent >= goal.target
+    : false
+
+  const trackingStart = getTrackingStartDate()
+  const readingDateSet = new Set(readingDates)
+  const todayStr = getTodayDate()
+
+  const weekDays: string[] = []
+  let cursor = todayStr
+
+  for (let index = 0; index < 7; index++) {
+    weekDays.push(cursor)
+    cursor = getPreviousDate(cursor)
+  }
+
+  weekDays.reverse()
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -378,11 +482,179 @@ export default function Home() {
         )}
       </section>
 
+      {goal && (
+        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                Today's Goal
+              </p>
+
+              <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                {goalCurrent} / {goal.target}{' '}
+                {goal.goal_type === 'minutes'
+                  ? 'minutes'
+                  : 'pages'}
+              </h2>
+            </div>
+
+            <span className="text-3xl">
+              {goalMet ? '✅' : '🎯'}
+            </span>
+          </div>
+
+          <div className="mt-5 h-3 overflow-hidden rounded-full bg-gray-200">
+            <div
+              className="h-full rounded-full bg-gray-900 transition-all"
+              style={{
+                width: `${goalProgress}%`,
+              }}
+            />
+          </div>
+
+          <p className="mt-3 text-sm text-gray-500">
+            {goalMet
+              ? "You've reached today's goal. 🌱"
+              : 'A gentle guide, not a target — every page still counts.'}
+          </p>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            This Week
+          </p>
+
+          <p className="text-xs text-gray-400">
+            Don't break the chain 🔗
+          </p>
+        </div>
+
+        <div className="mt-5 flex items-center justify-between gap-1 sm:gap-2">
+          {weekDays.map((date) => {
+            const hasRead =
+              readingDateSet.has(date)
+
+            const isToday = date === todayStr
+
+            const beforeTracking =
+              date < trackingStart
+
+            const weekdayLabel = new Date(
+              `${date}T00:00:00`
+            ).toLocaleDateString('en-IN', {
+              weekday: 'narrow',
+            })
+
+            const dayNumber = Number(
+              date.slice(-2)
+            )
+
+            let cellClasses: string
+            let icon: string
+
+            if (hasRead) {
+              cellClasses =
+                'border-green-200 bg-green-50 text-green-600'
+              icon = '✓'
+            } else if (isToday) {
+              cellClasses =
+                'border-amber-300 bg-amber-50 text-amber-600'
+              icon = '⏳'
+            } else if (beforeTracking) {
+              cellClasses =
+                'border-gray-100 bg-gray-50 text-gray-300'
+              icon = '·'
+            } else {
+              cellClasses =
+                'border-red-200 bg-red-50 text-red-500'
+              icon = '✕'
+            }
+
+            return (
+              <div
+                key={date}
+                className="flex flex-1 flex-col items-center gap-1.5"
+              >
+                <span className="text-[11px] font-medium uppercase text-gray-400">
+                  {weekdayLabel}
+                </span>
+
+                <div
+                  className={`flex aspect-square w-full max-w-[44px] items-center justify-center rounded-xl border text-sm font-semibold ${cellClasses}`}
+                >
+                  {icon}
+                </div>
+
+                <span
+                  className={`text-[11px] ${
+                    isToday
+                      ? 'font-bold text-gray-900'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  {dayNumber}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-gray-500">
-            Current Streak
-          </p>
+          <div className="relative flex items-center gap-1.5">
+            <p className="text-sm text-gray-500">
+              Current Streak
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowStreakInfo(
+                  (open) => !open
+                )
+              }
+              aria-expanded={showStreakInfo}
+              aria-label="How streaks work"
+              className="flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600 transition hover:bg-gray-300"
+            >
+              i
+            </button>
+
+            {showStreakInfo && (
+              <>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  onClick={() =>
+                    setShowStreakInfo(false)
+                  }
+                  className="fixed inset-0 z-10 cursor-default"
+                />
+
+                <div
+                  role="dialog"
+                  className="absolute left-0 top-7 z-20 w-64 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-lg"
+                >
+                  <p className="text-sm font-semibold text-gray-900">
+                    How streaks work 🔥
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-gray-600">
+                    Your streak counts consecutive
+                    days you've read. Read today or
+                    yesterday to keep it going — miss
+                    a full day and it resets to 0.
+                    Reading more than once in a day
+                    still counts as one day.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
 
           <p className="mt-2 text-2xl font-bold text-gray-900">
             🔥 {currentStreak}{' '}
@@ -392,7 +664,9 @@ export default function Home() {
           </p>
 
           <p className="mt-1 text-sm text-gray-500">
-            Keep showing up.
+            {currentStreak > 0
+              ? 'Keep showing up.'
+              : 'Read today to start a new streak.'}
           </p>
         </div>
 

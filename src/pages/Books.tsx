@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { computeCurrentPageFromHistory } from '../lib/books'
 
 type BookStatus = 'reading' | 'completed' | 'paused'
 
@@ -331,35 +332,13 @@ try {
   /*
    * Finishing a book overwrites current_page with total_pages.
    * When reopening, restore the true page from reading history
-   * (the latest entry's end_page) so accidental "finishes" don't
-   * leave the book stuck at 100%. Reading entries are never modified.
+   * so accidental "finishes" don't leave the book stuck at 100%.
+   * Reading entries are never modified.
    */
-  const { data: latestEntries, error: entriesError } =
-    await supabase
-      .from('reading_entries')
-      .select('end_page')
-      .eq('book_id', book.id)
-      .order('reading_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-  if (entriesError) {
-    console.error(
-      'Failed to read reading history while reopening book:',
-      entriesError
-    )
-
-    setErrorMessage(
-      'Unable to reopen the book. Please try again.'
-    )
-
-    return
-  }
-
-  const restoredPage =
-    latestEntries && latestEntries.length > 0
-      ? latestEntries[0].end_page
-      : book.starting_page
+  const restoredPage = await computeCurrentPageFromHistory(
+    book.id,
+    book.starting_page
+  )
 
   const confirmed = window.confirm(
     `Reopen "${book.title}" and continue reading from page ${restoredPage}?`

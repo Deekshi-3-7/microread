@@ -22,7 +22,7 @@ export default function Settings() {
   const [goal, setGoal] = useState<Goal | null>(null)
 
   const [goalType, setGoalType] = useState<'minutes' | 'pages'>('minutes')
-  const [goalTarget, setGoalTarget] = useState('20')
+  const [goalTarget, setGoalTarget] = useState('15')
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -321,7 +321,7 @@ export default function Settings() {
               value={goalTarget}
               onChange={(event) => setGoalTarget(event.target.value)}
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-200"
-              placeholder={goalType === 'minutes' ? '20' : '10'}
+              placeholder={goalType === 'minutes' ? '15' : '10'}
             />
           </div>
 

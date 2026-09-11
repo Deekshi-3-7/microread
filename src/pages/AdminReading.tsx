@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { computeCurrentPageFromHistory } from '../lib/books'
 
 type Member = {
   id: string
@@ -326,7 +328,7 @@ export default function AdminReading() {
     const { data: targetBook, error: bookError } =
       await supabase
         .from('books')
-        .select('id, current_page, starting_page, total_pages, status')
+        .select('id, starting_page, status')
         .eq('id', targetBookId)
         .single()
 
@@ -341,23 +343,10 @@ export default function AdminReading() {
       return
     }
 
-    const { data: bookEntries, error: entriesError } =
-      await supabase
-        .from('reading_entries')
-        .select('end_page, reading_date, created_at')
-        .eq('book_id', targetBookId)
-        .order('reading_date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1)
-
-    if (entriesError) {
-      throw entriesError
-    }
-
-    const latestPage =
-      bookEntries && bookEntries.length > 0
-        ? bookEntries[0].end_page
-        : targetBook.starting_page
+    const latestPage = await computeCurrentPageFromHistory(
+      targetBookId,
+      targetBook.starting_page
+    )
 
     const { error: bookUpdateError } = await supabase
       .from('books')
@@ -436,6 +425,13 @@ export default function AdminReading() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      <Link
+        to="/admin"
+        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-gray-900"
+      >
+        ← Back to Admin
+      </Link>
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

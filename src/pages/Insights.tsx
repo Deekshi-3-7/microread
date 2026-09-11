@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { calculateCurrentStreak } from '../lib/readingStats'
+import {
+  calculateCurrentStreak,
+  getTrackingStartDate,
+} from '../lib/readingStats'
 
 type Book = {
   id: string
@@ -27,11 +30,17 @@ type MonthlyStat = {
 function calculateLongestStreak(
   entries: ReadingEntry[]
 ): number {
+  const trackingStart = getTrackingStartDate()
+
   const uniqueDates = Array.from(
     new Set(
-      entries.map(
-        (entry) => entry.reading_date
-      )
+      entries
+        .map(
+          (entry) => entry.reading_date
+        )
+        .filter(
+          (date) => date >= trackingStart
+        )
     )
   ).sort()
 
