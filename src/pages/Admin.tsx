@@ -534,7 +534,7 @@ export default function Admin() {
                 className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-700">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-700 dark:bg-[#cdd3dc] dark:text-[#16181d]">
                     {member.name.charAt(0).toUpperCase()}
                   </div>
 

@@ -271,7 +271,7 @@ export default function Friends() {
               className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
             >
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-lg font-semibold text-gray-700">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-lg font-semibold text-gray-700 dark:bg-[#cdd3dc] dark:text-[#16181d]">
                   {friend.member.name
                     .charAt(0)
                     .toUpperCase()}
