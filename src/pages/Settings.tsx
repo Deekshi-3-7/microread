@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import ThemeToggle from '../components/ThemeToggle'
 
 type Member = {
   id: string
@@ -338,6 +339,23 @@ export default function Settings() {
           >
             {saving ? 'Saving...' : 'Save Reading Goal'}
           </button>
+        </div>
+      </section>
+
+      {/* Appearance */}
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-gray-900">
+            🎨 Appearance
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Switch between light and dark mode. Your choice is remembered on
+            this device.
+          </p>
+        </div>
+
+        <div className="sm:max-w-xs">
+          <ThemeToggle />
         </div>
       </section>
 

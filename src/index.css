@@ -1,1 +1,103 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+}
+
+/*
+ * Dark mode.
+ *
+ * The app styles everything with Tailwind's neutral utilities
+ * (bg-white, bg-gray-50, text-gray-900, border-gray-200, ...).
+ * In Tailwind v4 those compile to var(--color-*), so we get a
+ * consistent dark theme by inverting the neutral ramp here instead
+ * of adding dark: variants to every component. Colored accents
+ * (green/red/amber/etc.) are intentionally left as-is.
+ */
+.dark {
+  color-scheme: dark;
+
+  --color-white: #16181d; /* cards, sidebar — floats above the page */
+  --color-black: #f2f4f7; /* bg-black buttons / focus borders -> light */
+
+  --color-gray-50: #0d0f12; /* page background + recessed panels */
+  --color-gray-100: #1c1f26;
+  --color-gray-200: #2a2f3a; /* borders, progress tracks */
+  --color-gray-300: #3a414d; /* input borders */
+  --color-gray-400: #707886;
+  --color-gray-500: #98a1af; /* secondary text */
+  --color-gray-600: #b3bbc7;
+  --color-gray-700: #cdd3dc;
+  --color-gray-800: #e6e9ee; /* primary button hover */
+  --color-gray-900: #f2f4f7; /* primary text, buttons, progress fill */
+  --color-gray-950: #f8fafc;
+
+  /*
+   * Colored accents: darken the -50/-100 surfaces and -200/-300 borders,
+   * and lighten the -600/-700/-800 text shades so tinted panels, chips,
+   * and status badges read well on the dark background instead of glowing.
+   * Strong solid backgrounds (bg-*-500/-600 with white text) are left as-is.
+   */
+
+  /* Green */
+  --color-green-50: #0e1f16;
+  --color-green-100: #14291d;
+  --color-green-200: #204a31;
+  --color-green-600: #4ade80;
+  --color-green-700: #6ee7a3;
+  --color-green-800: #86efac;
+
+  /* Red */
+  --color-red-50: #241113;
+  --color-red-100: #2e1518;
+  --color-red-200: #4d2024;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+
+  /* Amber */
+  --color-amber-50: #231a08;
+  --color-amber-300: #6b5214;
+
+  /* Yellow */
+  --color-yellow-50: #231f08;
+  --color-yellow-100: #2a2409;
+  --color-yellow-200: #4d4212;
+  --color-yellow-300: #5c4f15;
+  --color-yellow-700: #fde047;
+  --color-yellow-800: #fef08a;
+
+  /* Blue */
+  --color-blue-50: #0d1a2b;
+  --color-blue-100: #122236;
+  --color-blue-200: #1e3a5c;
+  --color-blue-700: #60a5fa;
+  --color-blue-800: #93c5fd;
+
+  /* Purple */
+  --color-purple-50: #1a1229;
+  --color-purple-100: #221636;
+  --color-purple-200: #3a2a5c;
+  --color-purple-700: #c4b5fd;
+  --color-purple-800: #a78bfa;
+}
+
+/*
+ * Primary buttons, active nav, and selected states use `bg-gray-900`/
+ * `bg-black` + white text. Inverting the ramp turns those into stark
+ * near-white blocks in dark mode, so scope interactive elements to a
+ * calm dark surface with light text instead. Progress-bar fills use the
+ * same utilities on <div>s and are intentionally left light/visible.
+ */
+.dark :is(button, a).bg-gray-900,
+.dark :is(button, a).bg-black {
+  background-color: #232a35;
+  border: 1px solid #39424f;
+  color: #f2f4f7;
+}
+
+.dark :is(button, a).bg-gray-900:hover,
+.dark :is(button, a).bg-black:hover {
+  background-color: #2c333f;
+}

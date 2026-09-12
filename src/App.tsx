@@ -8,6 +8,7 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import ThemeToggle from './components/ThemeToggle'
 
 import Home from './pages/Home'
 import Reading from './pages/Reading'
@@ -213,6 +214,8 @@ function AppContent({
                   : 'Member'}
               </p>
             </div>
+
+            <ThemeToggle className="mb-3" />
 
             <button
               onClick={onLogout}
