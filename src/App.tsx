@@ -54,7 +54,7 @@ const sidebarItems: SidebarItem[] = [
   {
     path: '/friends',
     label: 'Friends',
-    icon: '👥',
+    icon: '🌏',
   },
   {
     path: '/insights',

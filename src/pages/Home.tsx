@@ -682,7 +682,7 @@ export default function Home() {
           </p>
 
           <p className="mt-2 text-2xl font-bold text-gray-900">
-            👥 {friendCount}{' '}
+            🌏 {friendCount}{' '}
             {friendCount === 1
               ? 'friend'
               : 'friends'}
