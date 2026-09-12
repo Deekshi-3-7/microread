@@ -23,7 +23,7 @@
   --color-black: #f2f4f7; /* bg-black buttons / focus borders -> light */
 
   --color-gray-50: #0d0f12; /* page background + recessed panels */
-  --color-gray-100: #1c1f26;
+  --color-gray-100: #272d38; /* avatars, chips, tracks — elevated off cards */
   --color-gray-200: #2a2f3a; /* borders, progress tracks */
   --color-gray-300: #3a414d; /* input borders */
   --color-gray-400: #707886;

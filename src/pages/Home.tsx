@@ -6,6 +6,7 @@ import {
   getPreviousDate,
   getTrackingStartDate,
 } from '../lib/readingStats'
+import ThemeToggle from '../components/ThemeToggle'
 
 type Member = {
   id: string
@@ -355,16 +356,21 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          {getGreeting()},{' '}
-          {member?.name || 'Reader'} 👋
-        </h1>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {getGreeting()},{' '}
+            {member?.name || 'Reader'} 👋
+          </h1>
 
-        <p className="mt-2 text-gray-600">
-          Small pages. Daily steps. Lasting
-          growth.
-        </p>
+          <p className="mt-2 text-gray-600">
+            Small pages. Daily steps. Lasting
+            growth.
+          </p>
+        </div>
+
+        {/* Mobile-only theme toggle (desktop uses the sidebar). */}
+        <ThemeToggle compact className="lg:hidden" />
       </div>
 
       <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
