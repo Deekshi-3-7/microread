@@ -118,13 +118,13 @@ function MobileNavLink({
   return (
     <Link
       to={item.path}
-      className={`flex min-w-[72px] flex-shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium ${
+      className={`flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium ${
         isActive
           ? 'bg-gray-900 text-white'
           : 'text-gray-500'
       }`}
     >
-      <span className="text-lg">
+      <span className="text-base leading-none">
         {item.icon}
       </span>
 
@@ -276,7 +276,13 @@ function AppContent({
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white lg:hidden">
-        <div className="flex items-center justify-around overflow-x-auto px-2 py-2">
+        <div
+          className="grid grid-cols-6 gap-0.5 px-1 pt-1.5"
+          style={{
+            paddingBottom:
+              'calc(0.375rem + env(safe-area-inset-bottom))',
+          }}
+        >
           {sidebarItems.slice(0, 5).map((item) => (
             <MobileNavLink
               key={item.path}

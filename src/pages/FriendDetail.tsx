@@ -191,19 +191,9 @@ export default function FriendDetail() {
       ? Math.round(totalMinutes / readingDays)
       : 0
 
-  const currentBook =
-    books.find(
-      (book) => book.status === 'reading'
-    ) ?? null
-
-  const currentProgress =
-    currentBook && currentBook.total_pages > 0
-      ? Math.round(
-          (currentBook.current_page /
-            currentBook.total_pages) *
-            100
-        )
-      : 0
+  const currentReading = books.filter(
+    (book) => book.status === 'reading'
+  )
 
   const completedBooks = books
     .filter(
@@ -394,39 +384,54 @@ export default function FriendDetail() {
           Currently Reading
         </h2>
 
-        {currentBook ? (
-          <div className="mt-5">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {currentBook.title}
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {currentBook.author}
-                </p>
-              </div>
+        {currentReading.length > 0 ? (
+          <div className="mt-5 space-y-5">
+            {currentReading.map((book) => {
+              const progress =
+                book.total_pages > 0
+                  ? Math.round(
+                      (book.current_page /
+                        book.total_pages) *
+                        100
+                    )
+                  : 0
 
-              <p className="text-2xl font-bold text-gray-900">
-                {currentProgress}%
-              </p>
-            </div>
+              return (
+                <div key={book.id}>
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {book.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {book.author}
+                      </p>
+                    </div>
 
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-gray-100">
-              <div
-                className="h-full rounded-full bg-gray-900"
-                style={{
-                  width: `${Math.min(
-                    currentProgress,
-                    100
-                  )}%`,
-                }}
-              />
-            </div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {progress}%
+                    </p>
+                  </div>
 
-            <p className="mt-2 text-sm text-gray-500">
-              Page {currentBook.current_page} of{' '}
-              {currentBook.total_pages}
-            </p>
+                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full rounded-full bg-gray-900"
+                      style={{
+                        width: `${Math.min(
+                          progress,
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+
+                  <p className="mt-2 text-sm text-gray-500">
+                    Page {book.current_page} of{' '}
+                    {book.total_pages}
+                  </p>
+                </div>
+              )
+            })}
           </div>
         ) : (
           <p className="mt-4 text-sm text-gray-500">

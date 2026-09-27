@@ -37,7 +37,7 @@ type ReadingEntry = {
 
 type FriendProgress = {
   member: Member
-  currentBook: Book | null
+  currentBooks: Book[]
   readingDays: number
   totalPages: number
   totalMinutes: number
@@ -46,7 +46,6 @@ type FriendProgress = {
   booksCompleted: number
   readToday: boolean
   lastLogAt: string | null
-  progress: number
 }
 
 export default function Friends() {
@@ -117,11 +116,11 @@ export default function Friends() {
               book.member_id === member.id
           )
 
-          const currentBook =
-            memberBooks.find(
+          const currentBooks =
+            memberBooks.filter(
               (book) =>
                 book.status === 'reading'
-            ) ?? null
+            )
 
           const memberEntries =
             entries.filter(
@@ -187,22 +186,9 @@ export default function Friends() {
               return latest
             }, null)
 
-          let progress = 0
-
-          if (
-            currentBook &&
-            currentBook.total_pages > 0
-          ) {
-            progress = Math.round(
-              (currentBook.current_page /
-                currentBook.total_pages) *
-                100
-            )
-          }
-
           return {
             member,
-            currentBook,
+            currentBooks,
             readingDays,
             totalPages,
             totalMinutes,
@@ -217,7 +203,6 @@ export default function Friends() {
             booksCompleted,
             readToday,
             lastLogAt,
-            progress,
           }
         })
 
@@ -367,49 +352,68 @@ export default function Friends() {
                   Currently Reading
                 </p>
 
-                {friend.currentBook ? (
-                  <>
-                    <h3 className="mt-2 font-semibold text-gray-900">
-                      {friend.currentBook.title}
-                    </h3>
+                {friend.currentBooks.length >
+                0 ? (
+                  <div className="mt-2 space-y-4">
+                    {friend.currentBooks.map(
+                      (currentBook) => {
+                        const progress =
+                          currentBook.total_pages >
+                          0
+                            ? Math.round(
+                                (currentBook.current_page /
+                                  currentBook.total_pages) *
+                                  100
+                              )
+                            : 0
 
-                    <p className="mt-1 text-sm text-gray-500">
-                      {friend.currentBook.author}
-                    </p>
+                        return (
+                          <div
+                            key={currentBook.id}
+                          >
+                            <h3 className="font-semibold text-gray-900">
+                              {currentBook.title}
+                            </h3>
 
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">
-                          Page{' '}
-                          {
-                            friend.currentBook
-                              .current_page
-                          }{' '}
-                          /{' '}
-                          {
-                            friend.currentBook
-                              .total_pages
-                          }
-                        </span>
+                            <p className="mt-1 text-sm text-gray-500">
+                              {currentBook.author}
+                            </p>
 
-                        <span className="font-semibold text-gray-900">
-                          {friend.progress}%
-                        </span>
-                      </div>
+                            <div className="mt-3">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">
+                                  Page{' '}
+                                  {
+                                    currentBook.current_page
+                                  }{' '}
+                                  /{' '}
+                                  {
+                                    currentBook.total_pages
+                                  }
+                                </span>
 
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className="h-full rounded-full bg-gray-900"
-                          style={{
-                            width: `${Math.min(
-                              friend.progress,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </>
+                                <span className="font-semibold text-gray-900">
+                                  {progress}%
+                                </span>
+                              </div>
+
+                              <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                  className="h-full rounded-full bg-gray-900"
+                                  style={{
+                                    width: `${Math.min(
+                                      progress,
+                                      100
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+                    )}
+                  </div>
                 ) : (
                   <p className="mt-2 text-sm text-gray-500">
                     No book currently being
