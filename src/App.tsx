@@ -14,6 +14,7 @@ import Home from './pages/Home'
 import Reading from './pages/Reading'
 import Books from './pages/Books'
 import Friends from './pages/Friends'
+import FriendDetail from './pages/FriendDetail'
 import Insights from './pages/Insights'
 import Milestones from './pages/Milestones'
 import Settings from './pages/Settings'
@@ -234,6 +235,10 @@ function AppContent({
             <Route path="/reading" element={<Reading />} />
             <Route path="/books" element={<Books />} />
             <Route path="/friends" element={<Friends />} />
+            <Route
+              path="/friends/:memberId"
+              element={<FriendDetail />}
+            />
             <Route path="/insights" element={<Insights />} />
             <Route path="/milestones" element={<Milestones />} />
             <Route path="/settings" element={<Settings />} />

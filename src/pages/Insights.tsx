@@ -3,7 +3,32 @@ import { supabase } from '../lib/supabase'
 import {
   calculateCurrentStreak,
   getTrackingStartDate,
+  getTodayDate,
 } from '../lib/readingStats'
+
+function formatShortDate(
+  dateKey: string
+): string {
+  return new Date(
+    `${dateKey}T00:00:00`
+  ).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+function toDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, '0')
+  const day = String(date.getDate()).padStart(
+    2,
+    '0'
+  )
+
+  return `${year}-${month}-${day}`
+}
 
 type Book = {
   id: string
@@ -11,6 +36,7 @@ type Book = {
   author: string
   total_pages: number
   current_page: number
+  completion_date: string | null
   status: 'reading' | 'completed' | 'paused'
 }
 
@@ -111,6 +137,9 @@ export default function Insights() {
   const [completedBooks, setCompletedBooks] =
     useState(0)
 
+  const [completedList, setCompletedList] =
+    useState<Book[]>([])
+
   const [loading, setLoading] =
     useState(true)
 
@@ -190,12 +219,16 @@ export default function Insights() {
         supabase
           .from('books')
           .select(
-            'id, title, author, total_pages, current_page, status'
+            'id, title, author, total_pages, current_page, completion_date, status'
           )
           .eq(
             'member_id',
             memberId
-          ),
+          )
+          // Newest first so the current-book pick matches Home / My Reading.
+          .order('created_at', {
+            ascending: false,
+          }),
       ])
 
       if (entriesError) {
@@ -226,13 +259,19 @@ export default function Insights() {
         readingBook
       )
 
-      setCompletedBooks(
-        books.filter(
+      const completed = books
+        .filter(
           (book) =>
-            book.status ===
-            'completed'
-        ).length
-      )
+            book.status === 'completed'
+        )
+        .sort((a, b) =>
+          (b.completion_date ?? '').localeCompare(
+            a.completion_date ?? ''
+          )
+        )
+
+      setCompletedBooks(completed.length)
+      setCompletedList(completed)
     } catch (error) {
       console.error(
         'Error loading insights:',
@@ -385,6 +424,59 @@ export default function Insights() {
       )
     )
 
+  // Daily pages for the reading-journey graph (last 30 days,
+  // never before the official tracking start date).
+  const pagesByDate = new Map<string, number>()
+
+  entries.forEach((entry) => {
+    pagesByDate.set(
+      entry.reading_date,
+      (pagesByDate.get(entry.reading_date) ??
+        0) + Number(entry.pages_read || 0)
+    )
+  })
+
+  const journeyEnd = new Date(
+    `${getTodayDate()}T00:00:00`
+  )
+
+  const trackingStartDate = new Date(
+    `${getTrackingStartDate()}T00:00:00`
+  )
+
+  const windowStart = new Date(journeyEnd)
+  windowStart.setDate(
+    windowStart.getDate() - 29
+  )
+
+  const journeyStart =
+    windowStart > trackingStartDate
+      ? windowStart
+      : trackingStartDate
+
+  const dailyData: {
+    date: string
+    pages: number
+  }[] = []
+
+  for (
+    const cursor = new Date(journeyStart);
+    cursor <= journeyEnd;
+    cursor.setDate(cursor.getDate() + 1)
+  ) {
+    const key = toDateKey(cursor)
+
+    dailyData.push({
+      date: key,
+      pages: pagesByDate.get(key) ?? 0,
+    })
+  }
+
+  const maxDailyPages = Math.max(
+    1,
+    ...dailyData.map((item) => item.pages)
+  )
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -511,6 +603,75 @@ export default function Insights() {
             books finished
           </p>
         </div>
+      </div>
+
+      {/* Reading journey graph */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Reading Journey 📈
+        </h2>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Pages you read each day
+          {dailyData.length >= 30
+            ? ' (last 30 days)'
+            : ''}
+          . Hover a bar for details.
+        </p>
+
+        {dailyData.every(
+          (item) => item.pages === 0
+        ) ? (
+          <p className="mt-6 text-sm text-gray-500">
+            Log some reading and your journey will
+            grow here. 🌱
+          </p>
+        ) : (
+          <>
+            <div className="mt-6 flex h-40 items-end gap-1">
+              {dailyData.map((item) => (
+                <div
+                  key={item.date}
+                  title={`${formatShortDate(
+                    item.date
+                  )} · ${item.pages} page${
+                    item.pages === 1 ? '' : 's'
+                  }`}
+                  className="flex h-full flex-1 items-end"
+                >
+                  <div
+                    className={`w-full rounded-t ${
+                      item.pages > 0
+                        ? 'bg-green-600'
+                        : 'bg-gray-100'
+                    }`}
+                    style={{
+                      height:
+                        item.pages > 0
+                          ? `${Math.max(
+                              6,
+                              (item.pages /
+                                maxDailyPages) *
+                                100
+                            )}%`
+                          : '3px',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-2 flex justify-between text-xs text-gray-400">
+              <span>
+                {formatShortDate(
+                  dailyData[0].date
+                )}
+              </span>
+
+              <span>Today</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Streak and averages */}
@@ -642,6 +803,42 @@ export default function Insights() {
           </p>
         )}
       </div>
+
+      {/* Completed books */}
+      {completedList.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Completed Books 🏆
+          </h2>
+
+          <div className="mt-5 space-y-3">
+            {completedList.map((book) => (
+              <div
+                key={book.id}
+                className="flex items-center justify-between gap-4 rounded-xl bg-gray-50 p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-gray-900">
+                    {book.title}
+                  </p>
+
+                  <p className="truncate text-sm text-gray-500">
+                    {book.author}
+                  </p>
+                </div>
+
+                <p className="shrink-0 text-sm text-gray-500">
+                  {book.completion_date
+                    ? new Date(
+                        book.completion_date
+                      ).toLocaleDateString('en-IN')
+                    : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Monthly summary */}
       <div className="rounded-xl border border-gray-200 bg-white p-6">

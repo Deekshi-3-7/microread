@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { calculateCurrentStreak } from '../lib/readingStats'
+import { Link } from 'react-router-dom'
+import {
+  calculateCurrentStreak,
+  calculateLongestStreak,
+  getTodayDate,
+  formatLogTime,
+  formatDuration,
+  timeOfDayEmoji,
+} from '../lib/readingStats'
 
 type Member = {
   id: string
@@ -24,6 +32,7 @@ type ReadingEntry = {
   reading_date: string
   pages_read: number
   minutes: number
+  created_at: string
 }
 
 type FriendProgress = {
@@ -33,6 +42,10 @@ type FriendProgress = {
   totalPages: number
   totalMinutes: number
   currentStreak: number
+  longestStreak: number
+  booksCompleted: number
+  readToday: boolean
+  lastLogAt: string | null
   progress: number
 }
 
@@ -65,12 +78,16 @@ export default function Friends() {
           .from('books')
           .select(
             'id, member_id, title, author, total_pages, current_page, status'
-          ),
+          )
+          // Newest first so the current-book pick matches Home / My Reading.
+          .order('created_at', {
+            ascending: false,
+          }),
 
         supabase
           .from('reading_entries')
           .select(
-            'member_id, reading_date, pages_read, minutes'
+            'member_id, reading_date, pages_read, minutes, created_at'
           )
           .order('reading_date', {
             ascending: false,
@@ -140,6 +157,36 @@ export default function Friends() {
               0
             )
 
+          const booksCompleted =
+            memberBooks.filter(
+              (book) =>
+                book.status === 'completed'
+            ).length
+
+          const todaysEntries =
+            memberEntries.filter(
+              (entry) =>
+                entry.reading_date ===
+                getTodayDate()
+            )
+
+          const readToday =
+            todaysEntries.length > 0
+
+          const lastLogAt =
+            todaysEntries.reduce<
+              string | null
+            >((latest, entry) => {
+              if (
+                !latest ||
+                entry.created_at > latest
+              ) {
+                return entry.created_at
+              }
+
+              return latest
+            }, null)
+
           let progress = 0
 
           if (
@@ -163,6 +210,13 @@ export default function Friends() {
               calculateCurrentStreak(
                 memberEntries
               ),
+            longestStreak:
+              calculateLongestStreak(
+                memberEntries
+              ),
+            booksCompleted,
+            readToday,
+            lastLogAt,
             progress,
           }
         })
@@ -266,26 +320,46 @@ export default function Friends() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {friends.map((friend) => (
-            <div
+            <Link
               key={friend.member.id}
-              className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+              to={`/friends/${friend.member.id}`}
+              className="block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-gray-300 hover:shadow-md"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-lg font-semibold text-gray-700 dark:bg-[#cdd3dc] dark:text-[#16181d]">
-                  {friend.member.name
-                    .charAt(0)
-                    .toUpperCase()}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-lg font-semibold text-gray-700 dark:bg-[#cdd3dc] dark:text-[#16181d]">
+                    {friend.member.name
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold text-gray-900">
+                      {friend.member.name}
+                    </h2>
+
+                    <p className="truncate text-sm text-gray-500">
+                      {friend.member.email}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="min-w-0">
-                  <h2 className="truncate text-lg font-semibold text-gray-900">
-                    {friend.member.name}
-                  </h2>
-
-                  <p className="truncate text-sm text-gray-500">
-                    {friend.member.email}
-                  </p>
-                </div>
+                <span
+                  className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                    friend.readToday
+                      ? 'border-green-200 bg-green-50 text-green-700'
+                      : 'border-gray-200 bg-gray-50 text-gray-500'
+                  }`}
+                >
+                  {friend.readToday &&
+                  friend.lastLogAt
+                    ? `${timeOfDayEmoji(
+                        friend.lastLogAt
+                      )} Read at ${formatLogTime(
+                        friend.lastLogAt
+                      )}`
+                    : 'Not yet today'}
+                </span>
               </div>
 
               <div className="mt-6">
@@ -376,19 +450,45 @@ export default function Friends() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-lg bg-gray-50 px-4 py-3">
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-gray-50 px-4 py-3">
+                  <p className="text-xs text-gray-500">
+                    Best Streak
+                  </p>
+
+                  <p className="mt-1 text-sm font-semibold text-gray-900">
+                    🏅 {friend.longestStreak}{' '}
+                    {friend.longestStreak === 1
+                      ? 'day'
+                      : 'days'}
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-gray-50 px-4 py-3">
+                  <p className="text-xs text-gray-500">
+                    Books Finished
+                  </p>
+
+                  <p className="mt-1 text-sm font-semibold text-gray-900">
+                    🏆 {friend.booksCompleted}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-lg bg-gray-50 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">
                     Reading Time
                   </span>
 
                   <span className="text-sm font-semibold text-gray-900">
-                    {friend.totalMinutes}{' '}
-                    min
+                    {formatDuration(
+                      friend.totalMinutes
+                    )}
                   </span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

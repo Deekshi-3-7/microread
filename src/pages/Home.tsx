@@ -60,7 +60,14 @@ export default function Home() {
   const [readingDates, setReadingDates] =
     useState<string[]>([])
 
+  const [journey, setJourney] = useState<
+    { date: string; pages: number }[]
+  >([])
+
   const [friendCount, setFriendCount] =
+    useState(0)
+
+  const [booksCompleted, setBooksCompleted] =
     useState(0)
 
   const [showStreakInfo, setShowStreakInfo] =
@@ -124,6 +131,10 @@ export default function Home() {
           data: goalData,
           error: goalError,
         },
+        {
+          count: completedCount,
+          error: completedError,
+        },
       ] = await Promise.all([
         supabase
           .from('books')
@@ -147,7 +158,7 @@ export default function Home() {
 
         supabase
           .from('reading_entries')
-          .select('reading_date')
+          .select('reading_date, pages_read')
           .eq('member_id', memberData.id)
           .order('reading_date', {
             ascending: false,
@@ -168,6 +179,15 @@ export default function Home() {
           .eq('active', true)
           .limit(1)
           .maybeSingle(),
+
+        supabase
+          .from('books')
+          .select('id', {
+            count: 'exact',
+            head: true,
+          })
+          .eq('member_id', memberData.id)
+          .eq('status', 'completed'),
       ])
 
       if (bookError) {
@@ -189,6 +209,12 @@ export default function Home() {
       if (goalError) {
         throw goalError
       }
+
+      if (completedError) {
+        throw completedError
+      }
+
+      setBooksCompleted(completedCount || 0)
 
       const todayList =
         (todayData ?? []) as ReadingEntry[]
@@ -230,6 +256,50 @@ export default function Home() {
             )
           )
         )
+      )
+
+      // Compact reading-journey graph: pages per day for the
+      // last 14 tracked days.
+      const pagesByDate = new Map<
+        string,
+        number
+      >()
+
+      ;(readingData || []).forEach(
+        (entry) => {
+          pagesByDate.set(
+            entry.reading_date,
+            (pagesByDate.get(
+              entry.reading_date
+            ) ?? 0) +
+              Number(entry.pages_read || 0)
+          )
+        }
+      )
+
+      const trackingStart =
+        getTrackingStartDate()
+
+      const journeyDays: string[] = []
+      let journeyCursor = today
+
+      for (let index = 0; index < 14; index++) {
+        if (journeyCursor >= trackingStart) {
+          journeyDays.push(journeyCursor)
+        }
+
+        journeyCursor = getPreviousDate(
+          journeyCursor
+        )
+      }
+
+      journeyDays.reverse()
+
+      setJourney(
+        journeyDays.map((date) => ({
+          date,
+          pages: pagesByDate.get(date) ?? 0,
+        }))
       )
     } catch (err) {
       console.error(
@@ -354,6 +424,15 @@ export default function Home() {
 
   weekDays.reverse()
 
+  const journeyMax = Math.max(
+    1,
+    ...journey.map((item) => item.pages)
+  )
+
+  const journeyHasData = journey.some(
+    (item) => item.pages > 0
+  )
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-start justify-between gap-3">
@@ -443,15 +522,8 @@ export default function Home() {
                 </div>
 
                 <p className="mt-2 text-sm text-green-700">
-                  {todayEntry.minutes} min ·{' '}
-                  {todayEntry.pages_read}{' '}
-                  pages
-                </p>
-
-                <p className="mt-1 text-sm text-green-700">
-                  Page{' '}
-                  {todayEntry.start_page} →{' '}
-                  {todayEntry.end_page}
+                  {todayMinutes} min ·{' '}
+                  {todayPages} pages today
                 </p>
               </div>
             ) : (
@@ -463,6 +535,27 @@ export default function Home() {
               </Link>
             )}
           </>
+        ) : readingDates.length > 0 ? (
+          <div className="rounded-2xl bg-gray-50 p-6 text-center">
+            <div className="text-4xl">🎉</div>
+
+            <h3 className="mt-3 font-semibold text-gray-900">
+              Ready for your next book?
+            </h3>
+
+            <p className="mt-1 text-sm text-gray-500">
+              {currentStreak > 0
+                ? `You're on a ${currentStreak}-day streak — keep it alive by starting a new book.`
+                : 'Great work finishing your book. Pick your next one to keep the habit going.'}
+            </p>
+
+            <Link
+              to="/books"
+              className="mt-4 inline-flex rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+            >
+              + Add your next book
+            </Link>
+          </div>
         ) : (
           <div className="rounded-2xl bg-gray-50 p-6 text-center">
             <div className="text-4xl">
@@ -608,7 +701,65 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {journeyHasData && (
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+              Reading Journey
+            </p>
+
+            <Link
+              to="/insights"
+              className="text-xs font-medium text-gray-400 transition hover:text-gray-600"
+            >
+              Last 14 days →
+            </Link>
+          </div>
+
+          <div className="mt-5 flex h-20 items-end gap-1">
+            {journey.map((item) => (
+              <div
+                key={item.date}
+                title={`${new Date(
+                  `${item.date}T00:00:00`
+                ).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                })} · ${item.pages} page${
+                  item.pages === 1 ? '' : 's'
+                }`}
+                className="flex h-full flex-1 items-end"
+              >
+                <div
+                  className={`w-full rounded-t ${
+                    item.pages > 0
+                      ? 'bg-green-600'
+                      : 'bg-gray-100'
+                  }`}
+                  style={{
+                    height:
+                      item.pages > 0
+                        ? `${Math.max(
+                            8,
+                            (item.pages /
+                              journeyMax) *
+                              100
+                          )}%`
+                        : '3px',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-2 text-xs text-gray-400">
+            Pages read per day — keep the bars
+            coming. 🌱
+          </p>
+        </section>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="relative flex items-center gap-1.5">
             <p className="text-sm text-gray-500">
@@ -690,6 +841,25 @@ export default function Home() {
 
           <p className="mt-1 text-sm text-gray-500">
             Growing the habit together.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">
+            Books Finished
+          </p>
+
+          <p className="mt-2 text-2xl font-bold text-gray-900">
+            🏆 {booksCompleted}{' '}
+            {booksCompleted === 1
+              ? 'book'
+              : 'books'}
+          </p>
+
+          <p className="mt-1 text-sm text-gray-500">
+            {booksCompleted > 0
+              ? 'Every finish counts. 🎉'
+              : 'Finish your first book to celebrate.'}
           </p>
         </div>
       </div>

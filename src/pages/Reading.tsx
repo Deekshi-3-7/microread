@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getTrackingStartDate } from '../lib/readingStats'
+import {
+  getTrackingStartDate,
+  formatLogTime,
+  timeOfDayEmoji,
+} from '../lib/readingStats'
 
 type Book = {
   id: string
@@ -18,6 +23,7 @@ type ReadingEntry = {
   end_page: number
   minutes: number
   takeaway: string | null
+  created_at: string
 }
 
 type Member = {
@@ -161,8 +167,13 @@ function Reading() {
     getTrackingStartDate()
 
   const [book, setBook] = useState<Book | null>(null)
+  const [readingBooks, setReadingBooks] =
+    useState<Book[]>([])
   const [loadingBook, setLoadingBook] =
     useState<boolean>(true)
+
+  const [bookTitles, setBookTitles] =
+    useState<Record<string, string>>({})
 
   const [todayEntries, setTodayEntries] =
     useState<ReadingEntry[]>([])
@@ -271,29 +282,33 @@ function Reading() {
             .order('created_at', {
               ascending: false,
             })
-            .limit(1)
-            .single()
 
         if (error) {
           console.error(
-            'Failed to load current book:',
+            'Failed to load reading books:',
             error
           )
 
           return
         }
 
-        const currentBook = data as Book
+        const list = (data ?? []) as Book[]
+
+        setReadingBooks(list)
+
+        const currentBook = list[0] ?? null
 
         setBook(currentBook)
 
-        setFromPage(
-          String(currentBook.current_page)
-        )
+        if (currentBook) {
+          setFromPage(
+            String(currentBook.current_page)
+          )
 
-        setToPage(
-          String(currentBook.current_page)
-        )
+          setToPage(
+            String(currentBook.current_page)
+          )
+        }
       } catch (error: unknown) {
         console.error(
           'Unexpected error while loading book:',
@@ -302,6 +317,59 @@ function Reading() {
       } finally {
         setLoadingBook(false)
       }
+    }
+
+  const handleSelectBook = (
+    bookId: string
+  ): void => {
+    const selected = readingBooks.find(
+      (item) => item.id === bookId
+    )
+
+    if (!selected) {
+      return
+    }
+
+    setBook(selected)
+    setFromPage(
+      String(selected.current_page)
+    )
+    setToPage(
+      String(selected.current_page)
+    )
+    setValidationError('')
+    setSuccessMessage('')
+  }
+
+  const loadBookTitles =
+    async (): Promise<void> => {
+      const member = await getMember()
+
+      if (!member) {
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('books')
+        .select('id, title')
+        .eq('member_id', member.id)
+
+      if (error) {
+        console.error(
+          'Failed to load book titles:',
+          error
+        )
+
+        return
+      }
+
+      const map: Record<string, string> = {}
+
+      for (const item of data ?? []) {
+        map[item.id] = item.title
+      }
+
+      setBookTitles(map)
     }
 
   const loadTodayHistory =
@@ -323,7 +391,7 @@ function Reading() {
           await supabase
             .from('reading_entries')
             .select(
-              'id, book_id, reading_date, start_page, end_page, minutes, takeaway'
+              'id, book_id, reading_date, start_page, end_page, minutes, takeaway, created_at'
             )
             .eq('member_id', member.id)
             .eq(
@@ -386,7 +454,7 @@ function Reading() {
           await supabase
             .from('reading_entries')
             .select(
-              'id, book_id, reading_date, start_page, end_page, minutes, takeaway'
+              'id, book_id, reading_date, start_page, end_page, minutes, takeaway, created_at'
             )
             .eq('member_id', member.id)
             .gte(
@@ -427,6 +495,7 @@ function Reading() {
     const loadPage = async (): Promise<void> => {
       await loadCurrentBook()
       await loadTodayHistory()
+      await loadBookTitles()
     }
 
     void loadPage()
@@ -643,6 +712,14 @@ function Reading() {
         current_page: end,
       })
 
+      setReadingBooks((previous) =>
+        previous.map((item) =>
+          item.id === book.id
+            ? { ...item, current_page: end }
+            : item
+        )
+      )
+
       setFromPage(String(end))
       setToPage(String(end))
       setMinutes('')
@@ -805,21 +882,6 @@ function Reading() {
     )
   }
 
-  if (!book) {
-    return (
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          My Reading
-        </h1>
-
-        <p className="mt-2 text-gray-600">
-          You don't have a book currently marked
-          as reading.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-900">
@@ -831,6 +893,7 @@ function Reading() {
       </p>
 
       {/* Today's Reading */}
+      {book ? (
       <div className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">
@@ -853,6 +916,33 @@ function Reading() {
         {successMessage && (
           <div className="mt-6 rounded-lg bg-green-50 p-4 text-sm text-green-700">
             ✓ {successMessage}
+          </div>
+        )}
+
+        {readingBooks.length > 1 && (
+          <div className="mt-6">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+              Reading now — pick a book to log
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {readingBooks.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() =>
+                    handleSelectBook(item.id)
+                  }
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    item.id === book.id
+                      ? 'border-gray-900 bg-gray-900 text-white'
+                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1046,7 +1136,10 @@ function Reading() {
                     className="rounded-xl border border-gray-200 p-5"
                   >
                     <h3 className="font-semibold text-gray-900">
-                      📖 {book.title}
+                      📖{' '}
+                      {bookTitles[
+                        entry.book_id
+                      ] ?? book.title}
                     </h3>
 
                     <p className="mt-2 text-sm text-gray-600">
@@ -1063,6 +1156,16 @@ function Reading() {
                       {entry.minutes === 1
                         ? 'minute'
                         : 'minutes'}
+                    </p>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      Logged at{' '}
+                      {timeOfDayEmoji(
+                        entry.created_at
+                      )}{' '}
+                      {formatLogTime(
+                        entry.created_at
+                      )}
                     </p>
 
                     {entry.takeaway && (
@@ -1083,6 +1186,27 @@ function Reading() {
           )}
         </div>
       </div>
+      ) : (
+        <div className="mt-8 rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center">
+          <div className="text-4xl">📖</div>
+
+          <h2 className="mt-3 text-lg font-semibold text-gray-900">
+            No book in progress
+          </h2>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Add a book to start logging your daily reading — your history
+            is still below.
+          </p>
+
+          <Link
+            to="/books"
+            className="mt-4 inline-flex rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
+          >
+            + Add a Book
+          </Link>
+        </div>
+      )}
 
       {/* Reading Calendar */}
       <div className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
@@ -1179,6 +1303,20 @@ function Reading() {
                 const isFuture =
                   date > today
 
+                const readEmoji =
+                  hasReading && entries[0]
+                    ? timeOfDayEmoji(
+                        entries.reduce(
+                          (earliest, item) =>
+                            item.created_at <
+                            earliest
+                              ? item.created_at
+                              : earliest,
+                          entries[0].created_at
+                        )
+                      )
+                    : ''
+
                 const isPastWithoutReading =
                   !isBeforeTracking &&
                   calendarDay.isCurrentMonth &&
@@ -1239,7 +1377,7 @@ function Reading() {
                         : isFuture
                           ? '—'
                           : hasReading
-                            ? '✓'
+                            ? `✓ ${readEmoji}`
                             : isToday
                               ? '⏳'
                               : '✕'}
@@ -1256,7 +1394,7 @@ function Reading() {
                   ✓
                 </span>
                 <span className="text-gray-600">
-                  Read
+                  Read (☀️🌤️🌆🌙 = when)
                 </span>
               </div>
 
@@ -1375,7 +1513,10 @@ function Reading() {
                             </p>
 
                             <p className="mt-3 text-sm text-gray-700">
-                              📖 {book.title}
+                              📖{' '}
+                              {bookTitles[
+                                entry.book_id
+                              ] ?? 'Book'}
                             </p>
 
                             <p className="mt-1 text-sm text-gray-600">
@@ -1400,6 +1541,16 @@ function Reading() {
                               1
                                 ? 'minute'
                                 : 'minutes'}
+                            </p>
+
+                            <p className="mt-1 text-sm text-gray-500">
+                              Logged at{' '}
+                              {timeOfDayEmoji(
+                                entry.created_at
+                              )}{' '}
+                              {formatLogTime(
+                                entry.created_at
+                              )}
                             </p>
 
                             {entry.takeaway && (

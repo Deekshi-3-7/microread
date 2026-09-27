@@ -280,7 +280,117 @@ if (!confirmed) {
 setErrorMessage('')
 setSuccessMessage('')
 
+const remaining =
+  book.total_pages - book.current_page
+
+let loggedPages = 0
+
 try {
+  /*
+   * Auto-log the final stretch as a reading entry so completing a
+   * book still credits today's streak and page/time totals. Marking
+   * a book complete only flips its status; the stats come entirely
+   * from reading_entries.
+   */
+  if (remaining > 0) {
+    const input = window.prompt(
+      `You have ${remaining} page${
+        remaining === 1 ? '' : 's'
+      } left. Enter the minutes you spent finishing them to log it (leave blank to finish without logging):`,
+      ''
+    )
+
+    if (input !== null && input.trim() !== '') {
+      const minutes = Number(input)
+
+      if (
+        !Number.isInteger(minutes) ||
+        minutes <= 0
+      ) {
+        setErrorMessage(
+          'Please enter a valid number of minutes.'
+        )
+
+        return
+      }
+
+      const member = await getMember()
+
+      if (!member) {
+        setErrorMessage(
+          'Unable to find your member account.'
+        )
+
+        return
+      }
+
+      const today = getTodayDate()
+
+      // Respect the one-entry-per-book-per-day unique constraint.
+      const { data: existingEntry } =
+        await supabase
+          .from('reading_entries')
+          .select('id, minutes')
+          .eq('member_id', member.id)
+          .eq('book_id', book.id)
+          .eq('reading_date', today)
+          .maybeSingle()
+
+      if (existingEntry) {
+        // Extend today's entry to the end of the book.
+        const { error: updateEntryError } =
+          await supabase
+            .from('reading_entries')
+            .update({
+              end_page: book.total_pages,
+              minutes:
+                existingEntry.minutes + minutes,
+            })
+            .eq('id', existingEntry.id)
+
+        if (updateEntryError) {
+          console.error(
+            'Failed to extend today’s reading entry:',
+            updateEntryError
+          )
+
+          setErrorMessage(
+            'Unable to log your final reading. Please try again.'
+          )
+
+          return
+        }
+      } else {
+        const { error: insertEntryError } =
+          await supabase
+            .from('reading_entries')
+            .insert({
+              member_id: member.id,
+              book_id: book.id,
+              reading_date: today,
+              start_page: book.current_page,
+              end_page: book.total_pages,
+              minutes,
+            })
+
+        if (insertEntryError) {
+          console.error(
+            'Failed to log final reading:',
+            insertEntryError
+          )
+
+          setErrorMessage(
+            'Unable to log your final reading. Please try again.'
+          )
+
+          return
+        }
+      }
+
+      loggedPages = remaining
+    }
+  }
+
   const { error } = await supabase
     .from('books')
     .update({
@@ -304,7 +414,11 @@ try {
   }
 
   setSuccessMessage(
-    `"${book.title}" has been completed! 🎉`
+    loggedPages > 0
+      ? `"${book.title}" completed! Logged your final ${loggedPages} page${
+          loggedPages === 1 ? '' : 's'
+        }. 🎉`
+      : `"${book.title}" has been completed! 🎉`
   )
 
   await loadBooks()
