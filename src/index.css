@@ -2,6 +2,13 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Never allow the page to scroll sideways — prevents content from
+   drifting off-center on mobile when a child briefly overflows. */
+html,
+body {
+  overflow-x: hidden;
+}
+
 :root {
   color-scheme: light;
 }

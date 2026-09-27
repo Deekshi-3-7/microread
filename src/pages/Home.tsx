@@ -280,8 +280,19 @@ export default function Home() {
       const trackingStart =
         getTrackingStartDate()
 
+      // Anchor the window to the most recent reading (or today,
+      // whichever is later) so the graph always shows recent
+      // activity even if the device clock drifts from the data.
+      const latestReadingDate =
+        readingData && readingData.length > 0
+          ? readingData[0].reading_date
+          : today
+
       const journeyDays: string[] = []
-      let journeyCursor = today
+      let journeyCursor =
+        latestReadingDate > today
+          ? latestReadingDate
+          : today
 
       for (let index = 0; index < 14; index++) {
         if (journeyCursor >= trackingStart) {
@@ -759,7 +770,7 @@ export default function Home() {
         </section>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="relative flex items-center gap-1.5">
             <p className="text-sm text-gray-500">

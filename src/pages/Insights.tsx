@@ -436,8 +436,27 @@ export default function Insights() {
     )
   })
 
+  // Anchor to the most recent reading (or today, whichever is later)
+  // so the graph always shows recent activity even if the device clock
+  // drifts from the data.
+  const latestEntryDate =
+    entries.length > 0
+      ? entries.reduce(
+          (latest, entry) =>
+            entry.reading_date > latest
+              ? entry.reading_date
+              : latest,
+          entries[0].reading_date
+        )
+      : getTodayDate()
+
+  const journeyEndKey =
+    latestEntryDate > getTodayDate()
+      ? latestEntryDate
+      : getTodayDate()
+
   const journeyEnd = new Date(
-    `${getTodayDate()}T00:00:00`
+    `${journeyEndKey}T00:00:00`
   )
 
   const trackingStartDate = new Date(
@@ -547,7 +566,7 @@ export default function Insights() {
       </div>
 
       {/* Main metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <p className="text-sm text-gray-500">
             Total Pages
@@ -675,7 +694,7 @@ export default function Insights() {
       </div>
 
       {/* Streak and averages */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <h2 className="text-lg font-semibold text-gray-900">
             Consistency 🔥

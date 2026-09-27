@@ -472,7 +472,7 @@ export default function AdminBooks() {
       )}
 
       {/* Summary */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">Total Books</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">
@@ -518,7 +518,7 @@ export default function AdminBooks() {
             </button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Member */}
             <div>
               <label

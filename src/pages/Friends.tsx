@@ -303,7 +303,7 @@ export default function Friends() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {friends.map((friend) => (
             <Link
               key={friend.member.id}

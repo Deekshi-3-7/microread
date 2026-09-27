@@ -118,26 +118,20 @@ function MobileNavLink({
   return (
     <Link
       to={item.path}
-      className={`flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium ${
+      className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium ${
         isActive
           ? 'bg-gray-900 text-white'
           : 'text-gray-500'
       }`}
     >
-      <span className="text-base leading-none">
+      <span className="text-lg leading-none">
         {item.icon}
       </span>
 
-      <span className="text-center leading-tight">
-        {item.label === 'My Reading' ? (
-          <>
-            My
-            <br />
-            Reading
-          </>
-        ) : (
-          item.label
-        )}
+      <span className="w-full truncate text-center leading-tight">
+        {item.label === 'My Reading'
+          ? 'Reading'
+          : item.label}
       </span>
     </Link>
   )

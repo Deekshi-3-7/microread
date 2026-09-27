@@ -966,7 +966,7 @@ function Reading() {
             onSubmit={handleSaveReading}
             className="mt-6"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label
                   htmlFor="fromPage"
@@ -1427,7 +1427,7 @@ function Reading() {
             </div>
 
             {/* Monthly Summary */}
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-xl bg-green-50 p-4">
                 <p className="text-sm text-green-700">
                   Reading Days

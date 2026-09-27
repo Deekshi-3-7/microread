@@ -211,7 +211,7 @@ export default function Settings() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <p className="text-sm text-gray-500">Name</p>
             <p className="mt-1 font-medium text-gray-900">

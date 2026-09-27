@@ -294,7 +294,7 @@ export default function FriendDetail() {
       </div>
 
       {/* Stat tiles */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statTiles.map((tile) => (
           <div
             key={tile.label}
@@ -312,7 +312,7 @@ export default function FriendDetail() {
       </div>
 
       {/* Consistency & pace */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <h2 className="text-lg font-semibold text-gray-900">
             Consistency 🔥

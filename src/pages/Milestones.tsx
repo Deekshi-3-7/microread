@@ -363,7 +363,7 @@ export default function Milestones() {
       </div>
 
       {/* Summary */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <p className="text-sm text-gray-500">
             Milestones Achieved
@@ -411,7 +411,7 @@ export default function Milestones() {
             Achieved 🎉
           </h2>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {achievedMilestones.map((milestone) => (
               <div
                 key={milestone.title}
@@ -450,7 +450,7 @@ export default function Milestones() {
           Keep Going 🌱
         </h2>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {upcomingMilestones.map((milestone) => {
             const progress = getProgress(milestone)
 

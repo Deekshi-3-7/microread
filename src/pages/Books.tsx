@@ -589,7 +589,7 @@ Books </h1>
         onSubmit={handleAddBook}
         className="mt-6"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label
               htmlFor="bookTitle"
@@ -766,7 +766,7 @@ Books </h1>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-lg bg-gray-50 p-4">
                   <p className="text-sm text-gray-500">
                     Current Page
