@@ -5,7 +5,32 @@ import {
   getTrackingStartDate,
   formatLogTime,
   timeOfDayEmoji,
+  timeOfDayBucket,
+  type TimeOfDay,
 } from '../lib/readingStats'
+
+/**
+ * Time-of-day key for the calendar dots and the "When you read" summary.
+ * These hues are a separate (categorical) axis from the brand heatmap, so
+ * they stay fixed across themes — the dot answers *when*, the cell shade
+ * answers *how much*.
+ */
+const TIME_OF_DAY_META: Record<
+  TimeOfDay,
+  { label: string; emoji: string; dot: string }
+> = {
+  morning: { label: 'Morning', emoji: '☀️', dot: '#f59e0b' },
+  afternoon: { label: 'Afternoon', emoji: '🌤️', dot: '#38bdf8' },
+  evening: { label: 'Evening', emoji: '🌆', dot: '#fb923c' },
+  night: { label: 'Night', emoji: '🌙', dot: '#818cf8' },
+}
+
+const TIME_OF_DAY_ORDER: TimeOfDay[] = [
+  'morning',
+  'afternoon',
+  'evening',
+  'night',
+]
 
 type Book = {
   id: string
@@ -43,6 +68,18 @@ function getTodayDate(): string {
   const day = String(today.getDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
+}
+
+/**
+ * Heatmap bucket for a day's page count. Returns the CSS class that
+ * tints a calendar cell by reading intensity (empty string = no reading).
+ */
+function heatClass(pages: number): string {
+  if (pages <= 0) return ''
+  if (pages <= 4) return 'heat-1'
+  if (pages <= 11) return 'heat-2'
+  if (pages <= 24) return 'heat-3'
+  return 'heat-4'
 }
 
 function formatDateForDisplay(dateString: string): string {
@@ -868,6 +905,25 @@ function Reading() {
       0
     )
 
+  // When (part of day) each reading session this month was logged.
+  const whenCounts = consideredCalendarEntries.reduce(
+    (counts, entry) => {
+      counts[timeOfDayBucket(entry.created_at)] += 1
+      return counts
+    },
+    {
+      morning: 0,
+      afternoon: 0,
+      evening: 0,
+      night: 0,
+    } as Record<TimeOfDay, number>
+  )
+
+  const whenTotal = TIME_OF_DAY_ORDER.reduce(
+    (sum, bucket) => sum + whenCounts[bucket],
+    0
+  )
+
   if (loadingBook) {
     return (
       <div>
@@ -1303,34 +1359,84 @@ function Reading() {
                 const isFuture =
                   date > today
 
-                const readEmoji =
+                const pagesForDay = entries.reduce(
+                  (sum, item) =>
+                    sum +
+                    Math.max(
+                      0,
+                      item.end_page -
+                        item.start_page
+                    ),
+                  0
+                )
+
+                const earliestTs =
                   hasReading && entries[0]
-                    ? timeOfDayEmoji(
-                        entries.reduce(
-                          (earliest, item) =>
-                            item.created_at <
-                            earliest
-                              ? item.created_at
-                              : earliest,
-                          entries[0].created_at
-                        )
+                    ? entries.reduce(
+                        (earliest, item) =>
+                          item.created_at <
+                          earliest
+                            ? item.created_at
+                            : earliest,
+                        entries[0].created_at
                       )
                     : ''
 
-                const isPastWithoutReading =
-                  !isBeforeTracking &&
-                  calendarDay.isCurrentMonth &&
-                  !hasReading &&
-                  !isToday &&
-                  !isFuture
+                const readEmoji = earliestTs
+                  ? timeOfDayEmoji(earliestTs)
+                  : ''
 
                 const isSelected =
                   selectedDate === date
+
+                /*
+                 * A gentle calendar: reading days are tinted by how much
+                 * was read (a heatmap), so consistency and effort are both
+                 * visible at a glance. Missed and pre-tracking days are
+                 * simply left neutral rather than called out in red.
+                 */
+                let stateClass: string
+
+                if (!calendarDay.isCurrentMonth) {
+                  stateClass =
+                    'border-transparent text-gray-300'
+                } else if (hasReading) {
+                  stateClass = heatClass(pagesForDay)
+                } else if (isToday) {
+                  stateClass =
+                    'border-[color:var(--brand)] text-gray-900'
+                } else if (isFuture) {
+                  stateClass =
+                    'border-transparent text-gray-300'
+                } else {
+                  stateClass =
+                    'border-gray-100 bg-gray-50 text-gray-400'
+                }
+
+                const dayTitle = hasReading
+                  ? `${formatDateForDisplay(
+                      date
+                    )}: ${pagesForDay} page${
+                      pagesForDay === 1 ? '' : 's'
+                    }${readEmoji ? ` ${readEmoji}` : ''}`
+                  : isToday
+                    ? `${formatDateForDisplay(
+                        date
+                      )}: today`
+                    : isBeforeTracking || isFuture
+                      ? ''
+                      : `${formatDateForDisplay(
+                          date
+                        )}: no reading`
 
                 return (
                   <button
                     type="button"
                     key={date}
+                    title={dayTitle}
+                    aria-label={
+                      dayTitle || undefined
+                    }
                     disabled={
                       !calendarDay.isCurrentMonth
                     }
@@ -1341,46 +1447,41 @@ function Reading() {
                         setSelectedDate(date)
                       }
                     }}
-                    className={`relative flex min-h-[52px] flex-col items-center justify-center rounded-lg border p-1 transition sm:min-h-[64px] ${
-                      !calendarDay.isCurrentMonth
-                        ? 'border-transparent text-gray-300'
-                        : isSelected
-                          ? isBeforeTracking
-                            ? 'border-gray-400 bg-gray-400 text-white'
-                            : hasReading
-                              ? 'border-gray-900 bg-gray-900 text-white'
-                              : isPastWithoutReading
-                                ? 'border-red-600 bg-red-600 text-white'
-                                : isToday
-                                  ? 'border-yellow-500 bg-yellow-500 text-white'
-                                  : 'border-gray-900 bg-gray-900 text-white'
-                          : isBeforeTracking
-                            ? 'border-gray-100 bg-gray-50 text-gray-300'
-                            : hasReading
-                              ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
-                              : isToday
-                                ? 'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-                                : isFuture
-                                  ? 'border-transparent bg-white text-gray-300'
-                                  : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                    className={`relative flex min-h-[52px] flex-col items-center justify-center rounded-lg border p-1 transition sm:min-h-[64px] ${stateClass} ${
+                      isSelected
+                        ? 'ring-2 ring-[color:var(--brand)] ring-offset-2 ring-offset-[color:var(--color-white)]'
+                        : ''
                     }`}
                   >
+                    {hasReading && earliestTs && (
+                      <span
+                        className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full"
+                        style={{
+                          background:
+                            TIME_OF_DAY_META[
+                              timeOfDayBucket(
+                                earliestTs
+                              )
+                            ].dot,
+                          boxShadow:
+                            '0 0 0 1.5px color-mix(in srgb, var(--color-white) 75%, transparent)',
+                        }}
+                        aria-hidden="true"
+                      />
+                    )}
+
                     <span className="text-sm font-medium">
-                      {Number(
-                        date.slice(-2)
-                      )}
+                      {Number(date.slice(-2))}
                     </span>
 
-                    <span className="mt-1 text-sm">
-                      {isBeforeTracking
-                        ? '—'
-                        : isFuture
-                          ? '—'
-                          : hasReading
-                            ? `✓ ${readEmoji}`
-                            : isToday
-                              ? '⏳'
-                              : '✕'}
+                    <span className="mt-1 text-xs leading-none">
+                      {isToday && !hasReading
+                        ? '⏳'
+                        : !hasReading &&
+                            calendarDay.isCurrentMonth &&
+                            !isFuture
+                          ? '·'
+                          : ''}
                     </span>
                   </button>
                 )
@@ -1388,40 +1489,58 @@ function Reading() {
             </div>
 
             {/* Calendar Legend */}
-            <div className="mt-6 flex flex-wrap gap-4 text-sm">
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <span className="text-green-600">
-                  ✓
+                <span className="text-gray-500">
+                  Less
                 </span>
-                <span className="text-gray-600">
-                  Read (☀️🌤️🌆🌙 = when)
+
+                <span className="flex items-center gap-1">
+                  <span className="h-4 w-4 rounded border border-gray-100 bg-gray-50" />
+                  <span className="heat-1 h-4 w-4 rounded border" />
+                  <span className="heat-2 h-4 w-4 rounded border" />
+                  <span className="heat-3 h-4 w-4 rounded border" />
+                  <span className="heat-4 h-4 w-4 rounded" />
+                </span>
+
+                <span className="text-gray-500">
+                  More pages
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-red-600">
-                  ✕
-                </span>
-                <span className="text-gray-600">
-                  No reading recorded
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-yellow-600">
-                  ⏳
-                </span>
+                <span className="h-4 w-4 rounded border-2 border-[color:var(--brand)]" />
                 <span className="text-gray-600">
                   Today
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-gray-400">
-                  —
+                <span className="text-gray-400">·</span>
+                <span className="text-gray-600">
+                  No reading / not tracked
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-0.5">
+                  {TIME_OF_DAY_ORDER.map(
+                    (bucket) => (
+                      <span
+                        key={bucket}
+                        className="h-2 w-2 rounded-full"
+                        style={{
+                          background:
+                            TIME_OF_DAY_META[
+                              bucket
+                            ].dot,
+                        }}
+                      />
+                    )
+                  )}
                 </span>
                 <span className="text-gray-600">
-                  Not tracked / Future
+                  Dot = time of day
                 </span>
               </div>
             </div>
@@ -1438,14 +1557,20 @@ function Reading() {
                 </p>
               </div>
 
-              <div className="rounded-xl bg-red-50 p-4">
-                <p className="text-sm text-red-700">
-                  No Reading
+              <div className="rounded-xl bg-gray-50 p-4">
+                <p className="text-sm text-gray-600">
+                  Days Missed
                 </p>
 
-                <p className="mt-1 text-2xl font-bold text-red-800">
+                <p className="mt-1 text-2xl font-bold text-gray-900">
                   {noReadingDays}
                 </p>
+
+                {noReadingDays === 0 && (
+                  <p className="mt-1 text-xs font-medium text-green-600">
+                    Flawless month 🎉
+                  </p>
+                )}
               </div>
 
               <div className="rounded-xl bg-gray-50 p-4">
@@ -1468,6 +1593,67 @@ function Reading() {
                 {totalMinutes} minutes
               </p>
             </div>
+
+            {/* When you read — part-of-day pattern for this month */}
+            {whenTotal > 0 && (
+              <div className="mt-3 rounded-xl bg-gray-50 p-4">
+                <p className="text-sm text-gray-600">
+                  When you read
+                </p>
+
+                <div className="mt-3 space-y-2.5">
+                  {TIME_OF_DAY_ORDER.map((bucket) => {
+                    const count = whenCounts[bucket]
+
+                    const pct =
+                      whenTotal > 0
+                        ? Math.round(
+                            (count / whenTotal) * 100
+                          )
+                        : 0
+
+                    const meta =
+                      TIME_OF_DAY_META[bucket]
+
+                    return (
+                      <div
+                        key={bucket}
+                        className="flex items-center gap-3"
+                      >
+                        <span className="flex w-28 shrink-0 items-center gap-2 text-sm text-gray-700">
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{
+                              background: meta.dot,
+                            }}
+                          />
+                          {meta.emoji} {meta.label}
+                        </span>
+
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${pct}%`,
+                              background: meta.dot,
+                            }}
+                          />
+                        </div>
+
+                        <span className="w-16 shrink-0 text-right text-sm text-gray-500">
+                          {count} · {pct}%
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <p className="mt-3 text-xs text-gray-400">
+                  Based on when each entry was saved, not a
+                  separate reading time.
+                </p>
+              </div>
+            )}
 
             {/* Selected Day */}
             {selectedDate && (

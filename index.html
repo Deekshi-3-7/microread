@@ -37,7 +37,7 @@
           var mode = localStorage.getItem('microread-mode')
           if (mode !== 'light' && mode !== 'dark' && mode !== 'system') {
             var legacy = localStorage.getItem('microread-theme')
-            mode = legacy === 'light' || legacy === 'dark' ? legacy : 'system'
+            mode = legacy === 'light' || legacy === 'dark' ? legacy : 'dark'
           }
           var isDark =
             mode === 'dark' ||

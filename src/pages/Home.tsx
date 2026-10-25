@@ -534,7 +534,7 @@ export default function Home() {
                   </span>
 
                   <p className="font-semibold text-green-800">
-                    Today's reading is complete
+                    You read today — nice work 🌱
                   </p>
                 </div>
 
@@ -639,7 +639,9 @@ export default function Home() {
           <p className="mt-3 text-sm text-gray-500">
             {goalMet
               ? "You've reached today's goal. 🌱"
-              : 'A gentle guide, not a target — every page still counts.'}
+              : goalCurrent > 0
+                ? "You've already shown up today — the goal is just a gentle guide."
+                : 'A gentle guide, not a target — every page still counts.'}
           </p>
         </section>
       )}
@@ -783,7 +785,11 @@ export default function Home() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <TiltCard className="hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div
+          className={`hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${
+            showStreakInfo ? 'relative z-30' : ''
+          }`}
+        >
           <div className="relative flex items-center gap-1.5">
             <p className="text-sm text-gray-500">
               Current Streak
@@ -848,7 +854,7 @@ export default function Home() {
               ? 'Keep showing up.'
               : 'Read today to start a new streak.'}
           </p>
-        </TiltCard>
+        </div>
 
         <TiltCard className="hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">

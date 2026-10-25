@@ -101,24 +101,36 @@ export function formatLogTime(
   )
 }
 
-export function timeOfDayEmoji(
-  timestamp: string
-): string {
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night'
+
+/** Buckets a timestamp into a part of the day (same cutoffs everywhere). */
+export function timeOfDayBucket(timestamp: string): TimeOfDay {
   const hour = new Date(timestamp).getHours()
 
   if (hour >= 5 && hour < 12) {
-    return '☀️'
+    return 'morning'
   }
 
   if (hour >= 12 && hour < 17) {
-    return '🌤️'
+    return 'afternoon'
   }
 
   if (hour >= 17 && hour < 21) {
-    return '🌆'
+    return 'evening'
   }
 
-  return '🌙'
+  return 'night'
+}
+
+const TIME_OF_DAY_EMOJI: Record<TimeOfDay, string> = {
+  morning: '☀️',
+  afternoon: '🌤️',
+  evening: '🌆',
+  night: '🌙',
+}
+
+export function timeOfDayEmoji(timestamp: string): string {
+  return TIME_OF_DAY_EMOJI[timeOfDayBucket(timestamp)]
 }
 
 export function calculateLongestStreak(
