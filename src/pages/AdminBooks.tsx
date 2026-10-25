@@ -773,7 +773,7 @@ export default function AdminBooks() {
 
                         <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                           <div
-                            className="h-full rounded-full bg-gray-900 transition-all"
+                            className="progress-fill h-full rounded-full transition-all"
                             style={{ width: `${progress}%` }}
                           />
                         </div>

@@ -4,18 +4,46 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>microread</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <title>MicroRead — Small pages. Daily steps.</title>
     <script>
-      // Apply the saved (or system) theme before paint to avoid a flash.
+      // Apply the saved palette + mode before paint to avoid a flash.
       (function () {
         try {
-          var saved = localStorage.getItem('microread-theme')
-          var isDark = saved
-            ? saved === 'dark'
-            : window.matchMedia('(prefers-color-scheme: dark)').matches
-          if (isDark) {
-            document.documentElement.classList.add('dark')
+          var root = document.documentElement
+
+          // Palette (brand color family).
+          var palettes = [
+            'emerald',
+            'midnight',
+            'editorial',
+            'cosmic',
+            'mono',
+          ]
+          var palette = localStorage.getItem('microread-palette')
+          if (palettes.indexOf(palette) === -1) palette = 'cosmic'
+          root.setAttribute('data-theme', palette)
+
+          // Mode (light / dark / system), migrating the legacy key.
+          var mode = localStorage.getItem('microread-mode')
+          if (mode !== 'light' && mode !== 'dark' && mode !== 'system') {
+            var legacy = localStorage.getItem('microread-theme')
+            mode = legacy === 'light' || legacy === 'dark' ? legacy : 'system'
           }
+          var isDark =
+            mode === 'dark' ||
+            (mode === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          if (isDark) root.classList.add('dark')
         } catch (e) {}
       })()
     </script>

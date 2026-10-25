@@ -567,7 +567,7 @@ export default function Insights() {
 
       {/* Main metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
             Total Pages
           </p>
@@ -581,7 +581,7 @@ export default function Insights() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
             Reading Time
           </p>
@@ -595,7 +595,7 @@ export default function Insights() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
             Reading Days
           </p>
@@ -609,7 +609,7 @@ export default function Insights() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
             Books Completed
           </p>
@@ -625,7 +625,7 @@ export default function Insights() {
       </div>
 
       {/* Reading journey graph */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">
           Reading Journey 📈
         </h2>
@@ -659,9 +659,9 @@ export default function Insights() {
                   className="flex h-full flex-1 items-end"
                 >
                   <div
-                    className={`w-full rounded-t ${
+                    className={`w-full rounded-t transition-all hover:brightness-110 ${
                       item.pages > 0
-                        ? 'bg-green-600'
+                        ? 'journey-bar'
                         : 'bg-gray-100'
                     }`}
                     style={{
@@ -695,7 +695,7 @@ export default function Insights() {
 
       {/* Streak and averages */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">
             Consistency 🔥
           </h2>
@@ -731,7 +731,7 @@ export default function Insights() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">
             Reading Pace
           </h2>
@@ -769,7 +769,7 @@ export default function Insights() {
       </div>
 
       {/* Current book */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">
           Current Book
         </h2>
@@ -792,9 +792,9 @@ export default function Insights() {
               </p>
             </div>
 
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-gray-100">
+            <div className="mt-4 progress-track h-3 overflow-hidden rounded-full">
               <div
-                className="h-full rounded-full bg-gray-900"
+                className="progress-fill h-full rounded-full"
                 style={{
                   width: `${Math.min(
                     currentBookProgress,
@@ -825,7 +825,7 @@ export default function Insights() {
 
       {/* Completed books */}
       {completedList.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">
             Completed Books 🏆
           </h2>
@@ -860,7 +860,7 @@ export default function Insights() {
       )}
 
       {/* Monthly summary */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">
           Monthly Summary
         </h2>
@@ -933,7 +933,7 @@ export default function Insights() {
       </div>
 
       {/* Motivation */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">
           Keep Going 🌱
         </h2>

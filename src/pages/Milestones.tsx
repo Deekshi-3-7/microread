@@ -364,7 +364,7 @@ export default function Milestones() {
 
       {/* Summary */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <p className="text-sm text-gray-500">
             Milestones Achieved
           </p>
@@ -378,7 +378,7 @@ export default function Milestones() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <p className="text-sm text-gray-500">
             Next Milestone
           </p>
@@ -415,15 +415,15 @@ export default function Milestones() {
             {achievedMilestones.map((milestone) => (
               <div
                 key={milestone.title}
-                className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+                className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
               >
                 <div className="flex items-start justify-between">
-                  <span className="text-3xl">
+                  <span className="badge-3d h-14 w-14 text-2xl">
                     {milestone.icon}
                   </span>
 
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                    Achieved
+                  <span className="brand-chip rounded-full px-3 py-1 text-xs font-semibold">
+                    ✓ Achieved
                   </span>
                 </div>
 
@@ -457,10 +457,10 @@ export default function Milestones() {
             return (
               <div
                 key={milestone.title}
-                className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+                className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
               >
                 <div className="flex items-start justify-between">
-                  <span className="text-3xl">
+                  <span className="badge-locked h-14 w-14 text-2xl">
                     {milestone.icon}
                   </span>
 
@@ -477,9 +477,9 @@ export default function Milestones() {
                   {milestone.description}
                 </p>
 
-                <div className="mt-5 h-2 overflow-hidden rounded-full bg-gray-100">
+                <div className="mt-5 progress-track h-2 overflow-hidden rounded-full">
                   <div
-                    className="h-full rounded-full bg-gray-900"
+                    className="progress-fill h-full rounded-full"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -500,7 +500,7 @@ export default function Milestones() {
       </section>
 
       {/* Philosophy */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="hover-lift rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">
           Small steps matter 🌱
         </h2>

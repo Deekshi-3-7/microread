@@ -397,9 +397,9 @@ export default function Friends() {
                                 </span>
                               </div>
 
-                              <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
+                              <div className="mt-2 progress-track h-2 overflow-hidden rounded-full">
                                 <div
-                                  className="h-full rounded-full bg-gray-900"
+                                  className="progress-fill h-full rounded-full"
                                   style={{
                                     width: `${Math.min(
                                       progress,

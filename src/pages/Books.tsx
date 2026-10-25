@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { computeCurrentPageFromHistory } from '../lib/books'
+import TiltCard from '../components/TiltCard'
 
 type BookStatus = 'reading' | 'completed' | 'paused'
 
@@ -729,42 +730,54 @@ Books </h1>
           )
 
           return (
-            <div
+            <TiltCard
               key={book.id}
-              className="rounded-2xl bg-white p-6 shadow-sm"
+              className="hover-lift rounded-2xl bg-white p-6 shadow-sm"
             >
-              <div className="flex flex-col justify-between gap-4 sm:flex-row">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                <div className="book-cover h-40 w-28 shrink-0 self-center p-3 sm:self-start">
+                  <span className="line-clamp-5 text-sm font-bold leading-tight">
                     {book.title}
-                  </h3>
-
-                  <p className="mt-1 text-sm text-gray-500">
-                    {book.author}
-                  </p>
+                  </span>
                 </div>
 
-                <div className="text-left sm:text-right">
-                  <p className="text-3xl font-bold text-gray-900">
-                    {progress}%
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row">
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {book.title}
+                      </h3>
 
-                  <p className="text-sm text-gray-500">
-                    completed
-                  </p>
-                </div>
-              </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {book.author}
+                      </p>
 
-              <div className="mt-5">
-                <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
-                  <div
-                    className="h-full rounded-full bg-black transition-all"
-                    style={{
-                      width: `${progress}%`,
-                    }}
-                  />
-                </div>
-              </div>
+                      <span className="brand-chip mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold">
+                        📖 Currently reading
+                      </span>
+                    </div>
+
+                    <div className="text-left sm:text-right">
+                      <p className="gradient-text text-3xl font-bold">
+                        {progress}%
+                      </p>
+
+                      <p className="text-sm text-gray-500">
+                        completed
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5">
+                    <div className="progress-track h-3 w-full overflow-hidden rounded-full">
+                      <div
+                        className="progress-fill h-full rounded-full transition-all"
+                        style={{
+                          width: `${progress}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
 
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-lg bg-gray-50 p-4">
@@ -800,16 +813,18 @@ Books </h1>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  void handleFinishBook(book)
-                }
-                className="mt-6 w-full rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-900 hover:bg-gray-50"
-              >
-                ✓ I Finished This Book
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void handleFinishBook(book)
+                    }
+                    className="press mt-6 w-full rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    ✓ I Finished This Book
+                  </button>
+                </div>
+              </div>
+            </TiltCard>
           )
         })}
       </div>
@@ -835,30 +850,42 @@ Books </h1>
     ) : (
       <div className="mt-4 space-y-4">
         {completedBooks.map((book: Book) => (
-          <div
+          <TiltCard
             key={book.id}
-            className="rounded-2xl bg-white p-6 shadow-sm"
+            className="hover-lift rounded-2xl bg-white p-6 shadow-sm"
           >
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {book.title}
-                </h3>
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-4">
+                <div className="book-cover h-24 w-16 shrink-0 p-2">
+                  <span className="line-clamp-3 text-[11px] font-bold leading-tight">
+                    {book.title}
+                  </span>
+                </div>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  {book.author}
-                </p>
+                <div className="min-w-0">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {book.title}
+                  </h3>
 
-                <p className="mt-3 text-sm text-gray-600">
-                  ✓ Completed on{' '}
-                  {book.completion_date
-                    ? new Date(
-                        book.completion_date
-                      ).toLocaleDateString(
-                        'en-IN'
-                      )
-                    : 'Unknown date'}
-                </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {book.author}
+                  </p>
+
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                    🏆 Completed
+                  </span>
+
+                  <p className="mt-2 text-sm text-gray-600">
+                    ✓ Completed on{' '}
+                    {book.completion_date
+                      ? new Date(
+                          book.completion_date
+                        ).toLocaleDateString(
+                          'en-IN'
+                        )
+                      : 'Unknown date'}
+                  </p>
+                </div>
               </div>
 
               <button
@@ -866,12 +893,12 @@ Books </h1>
                 onClick={() =>
                   void handleReopenBook(book)
                 }
-                className="rounded-lg border border-gray-300 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50"
+                className="press shrink-0 rounded-lg border border-gray-300 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50"
               >
                 Reopen Book
               </button>
             </div>
-          </div>
+          </TiltCard>
         ))}
       </div>
     )}

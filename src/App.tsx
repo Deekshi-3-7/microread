@@ -90,13 +90,19 @@ function SidebarLink({
   return (
     <Link
       to={item.path}
-      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+      className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
         isActive
-          ? 'bg-gray-900 text-white'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          ? 'nav-active'
+          : 'text-gray-600 hover:translate-x-0.5 hover:bg-gray-100 hover:text-gray-900'
       }`}
     >
-      <span>{item.icon}</span>
+      <span
+        className={`text-base transition-transform duration-200 group-hover:scale-110 ${
+          isActive ? '' : 'grayscale-0'
+        }`}
+      >
+        {item.icon}
+      </span>
       <span>{item.label}</span>
     </Link>
   )
@@ -118,10 +124,10 @@ function MobileNavLink({
   return (
     <Link
       to={item.path}
-      className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium ${
+      className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium transition-all duration-200 ${
         isActive
-          ? 'bg-gray-900 text-white'
-          : 'text-gray-500'
+          ? 'nav-active -translate-y-0.5'
+          : 'text-gray-500 active:scale-95'
       }`}
     >
       <span className="text-lg leading-none">
@@ -144,14 +150,18 @@ function AppContent({
   member: Member
   onLogout: () => Promise<void>
 }) {
+  const location = useLocation()
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gray-50">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white lg:block">
+    <div className="app-bg min-h-screen overflow-x-hidden">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white/80 backdrop-blur-xl lg:block">
         <div className="flex h-full flex-col">
           <div className="border-b border-gray-200 px-6 py-6">
-            <Link to="/" className="block">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🌱</span>
+            <Link to="/" className="group block">
+              <div className="flex items-center gap-3">
+                <span className="brand-badge flex h-10 w-10 items-center justify-center rounded-2xl text-xl transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
+                  🌱
+                </span>
 
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">
@@ -223,7 +233,10 @@ function AppContent({
       </aside>
 
       <main className="pb-24 lg:ml-64 lg:pb-0">
-        <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div
+          key={location.pathname}
+          className="animate-fade-up px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+        >
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/reading" element={<Reading />} />
@@ -269,7 +282,7 @@ function AppContent({
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/85 backdrop-blur-xl lg:hidden">
         <div
           className="grid grid-cols-6 gap-0.5 px-1 pt-1.5"
           style={{
@@ -325,14 +338,16 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="app-bg flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+        <div className="animate-pop rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
           <div className="text-center">
-            <div className="text-4xl">🌱</div>
+            <div className="brand-badge animate-float mx-auto flex h-16 w-16 items-center justify-center rounded-3xl text-3xl">
+              🌱
+            </div>
 
-            <h1 className="mt-3 text-3xl font-bold text-gray-900">
-              MicroRead
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+              Micro<span className="gradient-text">Read</span>
             </h1>
 
             <p className="mt-2 text-sm text-gray-500">
@@ -360,7 +375,7 @@ function LoginPage() {
                   setEmail(event.target.value)
                 }
                 required
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-200"
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 field outline-none transition"
                 placeholder="you@example.com"
               />
             </div>
@@ -381,7 +396,7 @@ function LoginPage() {
                   setPassword(event.target.value)
                 }
                 required
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-200"
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 field outline-none transition"
                 placeholder="••••••••"
               />
             </div>

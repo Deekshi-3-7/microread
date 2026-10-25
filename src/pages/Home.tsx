@@ -7,6 +7,7 @@ import {
   getTrackingStartDate,
 } from '../lib/readingStats'
 import ThemeToggle from '../components/ThemeToggle'
+import TiltCard from '../components/TiltCard'
 
 type Member = {
   id: string
@@ -448,9 +449,14 @@ export default function Home() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             {getGreeting()},{' '}
-            {member?.name || 'Reader'} 👋
+            <span className="gradient-text">
+              {member?.name || 'Reader'}
+            </span>{' '}
+            <span className="inline-block origin-bottom-right animate-float">
+              👋
+            </span>
           </h1>
 
           <p className="mt-2 text-gray-600">
@@ -463,7 +469,7 @@ export default function Home() {
         <ThemeToggle compact className="lg:hidden" />
       </div>
 
-      <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="hover-lift rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-6">
           <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             Today's Reading
@@ -478,9 +484,9 @@ export default function Home() {
 
         {currentBook ? (
           <>
-            <div className="rounded-2xl bg-gray-50 p-5">
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-5">
               <div className="flex items-start gap-4">
-                <div className="text-3xl">
+                <div className="brand-soft flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl">
                   📖
                 </div>
 
@@ -502,14 +508,14 @@ export default function Home() {
                         {currentBook.total_pages}
                       </span>
 
-                      <span className="font-semibold text-gray-700">
+                      <span className="gradient-text text-base font-bold">
                         {progress}%
                       </span>
                     </div>
 
-                    <div className="mt-2 h-3 overflow-hidden rounded-full bg-gray-200">
+                    <div className="mt-2 h-3 overflow-hidden rounded-full progress-track">
                       <div
-                        className="h-full rounded-full bg-gray-900 transition-all"
+                        className="progress-fill animate-grow h-full rounded-full transition-all duration-700"
                         style={{
                           width: `${progress}%`,
                         }}
@@ -540,9 +546,10 @@ export default function Home() {
             ) : (
               <Link
                 to="/reading"
-                className="mt-5 flex w-full items-center justify-center rounded-2xl bg-gray-900 px-6 py-4 text-base font-semibold text-white transition hover:bg-gray-800"
+                className="btn-brand mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-semibold"
               >
-                ➕ Update Today's Reading
+                <span className="text-lg">➕</span>
+                Update Today's Reading
               </Link>
             )}
           </>
@@ -593,7 +600,7 @@ export default function Home() {
       </section>
 
       {goal && (
-        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="hover-lift rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -601,21 +608,28 @@ export default function Home() {
               </p>
 
               <h2 className="mt-2 text-2xl font-bold text-gray-900">
-                {goalCurrent} / {goal.target}{' '}
+                <span className="gradient-text">
+                  {goalCurrent}
+                </span>{' '}
+                / {goal.target}{' '}
                 {goal.goal_type === 'minutes'
                   ? 'minutes'
                   : 'pages'}
               </h2>
             </div>
 
-            <span className="text-3xl">
+            <span
+              className={`flex h-12 w-12 items-center justify-center rounded-2xl text-2xl ${
+                goalMet ? 'brand-soft' : 'bg-gray-100'
+              }`}
+            >
               {goalMet ? '✅' : '🎯'}
             </span>
           </div>
 
-          <div className="mt-5 h-3 overflow-hidden rounded-full bg-gray-200">
+          <div className="mt-5 h-3 overflow-hidden rounded-full progress-track">
             <div
-              className="h-full rounded-full bg-gray-900 transition-all"
+              className="progress-fill animate-grow h-full rounded-full transition-all duration-700"
               style={{
                 width: `${goalProgress}%`,
               }}
@@ -630,7 +644,7 @@ export default function Home() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             This Week
@@ -713,7 +727,7 @@ export default function Home() {
       </section>
 
       {journeyHasData && (
-        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
               Reading Journey
@@ -721,7 +735,7 @@ export default function Home() {
 
             <Link
               to="/insights"
-              className="text-xs font-medium text-gray-400 transition hover:text-gray-600"
+              className="brand-chip rounded-full px-2.5 py-1 text-xs font-semibold transition hover:brightness-105"
             >
               Last 14 days →
             </Link>
@@ -742,10 +756,8 @@ export default function Home() {
                 className="flex h-full flex-1 items-end"
               >
                 <div
-                  className={`w-full rounded-t ${
-                    item.pages > 0
-                      ? 'bg-green-600'
-                      : 'bg-gray-100'
+                  className={`w-full rounded-t transition-all hover:brightness-110 ${
+                    item.pages > 0 ? 'journey-bar' : 'bg-gray-100'
                   }`}
                   style={{
                     height:
@@ -771,7 +783,7 @@ export default function Home() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <TiltCard className="hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="relative flex items-center gap-1.5">
             <p className="text-sm text-gray-500">
               Current Streak
@@ -836,9 +848,9 @@ export default function Home() {
               ? 'Keep showing up.'
               : 'Read today to start a new streak.'}
           </p>
-        </div>
+        </TiltCard>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <TiltCard className="hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
             Your Reading Circle
           </p>
@@ -853,9 +865,9 @@ export default function Home() {
           <p className="mt-1 text-sm text-gray-500">
             Growing the habit together.
           </p>
-        </div>
+        </TiltCard>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <TiltCard className="hover-lift rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">
             Books Finished
           </p>
@@ -872,7 +884,7 @@ export default function Home() {
               ? 'Every finish counts. 🎉'
               : 'Finish your first book to celebrate.'}
           </p>
-        </div>
+        </TiltCard>
       </div>
 
       <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 text-center">
