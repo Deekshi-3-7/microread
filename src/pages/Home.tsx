@@ -5,6 +5,7 @@ import {
   calculateCurrentStreak,
   getPreviousDate,
   getTrackingStartDate,
+  getEffectiveStartDate,
 } from '../lib/readingStats'
 import ThemeToggle from '../components/ThemeToggle'
 import TiltCard from '../components/TiltCard'
@@ -12,6 +13,7 @@ import TiltCard from '../components/TiltCard'
 type Member = {
   id: string
   name: string
+  joined_date: string
 }
 
 type Book = {
@@ -99,7 +101,7 @@ export default function Home() {
         error: memberError,
       } = await supabase
         .from('members')
-        .select('id, name')
+        .select('id, name, joined_date')
         .eq('auth_user_id', user.id)
         .single()
 
@@ -422,7 +424,10 @@ export default function Home() {
     ? goalCurrent >= goal.target
     : false
 
-  const trackingStart = getTrackingStartDate()
+  // Days before a member joined aren't "missed" — they weren't here yet.
+  const trackingStart = getEffectiveStartDate(
+    member?.joined_date
+  )
   const readingDateSet = new Set(readingDates)
   const todayStr = getTodayDate()
 

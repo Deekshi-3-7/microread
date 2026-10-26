@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import {
   getTrackingStartDate,
+  getEffectiveStartDate,
   formatLogTime,
   timeOfDayEmoji,
   timeOfDayBucket,
@@ -53,6 +54,7 @@ type ReadingEntry = {
 
 type Member = {
   id: string
+  joined_date: string | null
 }
 
 type CalendarDay = {
@@ -200,8 +202,8 @@ function getCalendarDays(
 }
 
 function Reading() {
-  const trackingStartDate =
-    getTrackingStartDate()
+  const [joinedDate, setJoinedDate] =
+    useState<string | null>(null)
 
   const [book, setBook] = useState<Book | null>(null)
   const [readingBooks, setReadingBooks] =
@@ -281,7 +283,7 @@ function Reading() {
       const { data: member, error } =
         await supabase
           .from('members')
-          .select('id')
+          .select('id, joined_date')
           .eq('auth_user_id', user.id)
           .single()
 
@@ -293,6 +295,10 @@ function Reading() {
 
         return null
       }
+
+      setJoinedDate(
+        (member as Member).joined_date ?? null
+      )
 
       return member as Member
     }
@@ -788,6 +794,23 @@ function Reading() {
       calendarMonth
     )
 
+  // A member's history begins the later of the global tracking start and
+  // the day they joined — so a new member isn't shown "missed" days for a
+  // time before they were even here.
+  const effectiveStartDate =
+    getEffectiveStartDate(joinedDate)
+
+  const joinedAfterTracking =
+    effectiveStartDate > getTrackingStartDate()
+
+  const effectiveStartLabel = new Date(
+    `${effectiveStartDate}T00:00:00`
+  ).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
   const entriesByDate =
     new Map<string, ReadingEntry[]>()
 
@@ -816,18 +839,11 @@ function Reading() {
     calendarMonth ===
       currentDate.getMonth()
 
-  const daysInSelectedMonth =
-    new Date(
-      calendarYear,
-      calendarMonth + 1,
-      0
-    ).getDate()
-
   const trackedCalendarEntries =
     calendarEntries.filter(
       (entry) =>
         entry.reading_date >=
-        trackingStartDate
+        effectiveStartDate
     )
 
   const consideredCalendarEntries =
@@ -847,46 +863,45 @@ function Reading() {
     )
   ).size
 
-  const daysConsidered =
-    calendarYear ===
-        new Date(
-          `${trackingStartDate}T00:00:00`
-        ).getFullYear() &&
-    calendarMonth ===
-        new Date(
-          `${trackingStartDate}T00:00:00`
-        ).getMonth()
-      ? Math.max(
-          currentDate.getDate() -
-            Number(
-              trackingStartDate.slice(-2)
-            ) +
-            1,
-          0
-        )
-      : isCurrentMonth
-        ? currentDate.getDate()
-        : daysInSelectedMonth
+  // Count the days in the viewed month that fall within this member's
+  // tracked window (on/after their effective start) and up to today —
+  // those are the only days that can count as "missed".
+  const monthFirstKey = getDateKey(
+    new Date(calendarYear, calendarMonth, 1)
+  )
 
-  const effectiveDaysConsidered =
-    calendarYear <
-        new Date(
-          `${trackingStartDate}T00:00:00`
-        ).getFullYear() ||
-    (calendarYear ===
-        new Date(
-          `${trackingStartDate}T00:00:00`
-        ).getFullYear() &&
-      calendarMonth <
-        new Date(
-          `${trackingStartDate}T00:00:00`
-        ).getMonth())
-      ? 0
-      : daysConsidered
+  const monthLastKey = getDateKey(
+    new Date(calendarYear, calendarMonth + 1, 0)
+  )
+
+  const windowStart =
+    monthFirstKey > effectiveStartDate
+      ? monthFirstKey
+      : effectiveStartDate
+
+  let windowEnd = isCurrentMonth
+    ? today
+    : monthLastKey
+
+  if (windowEnd > today) {
+    windowEnd = today
+  }
+
+  const daysConsidered =
+    windowEnd >= windowStart
+      ? Math.round(
+          (Date.parse(
+            `${windowEnd}T00:00:00`
+          ) -
+            Date.parse(
+              `${windowStart}T00:00:00`
+            )) /
+            86400000
+        ) + 1
+      : 0
 
   const noReadingDays = Math.max(
-    effectiveDaysConsidered -
-      readingDays,
+    daysConsidered - readingDays,
     0
   )
 
@@ -1273,8 +1288,9 @@ function Reading() {
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Tracking started on September 6,
-              2026.
+              {joinedAfterTracking
+                ? `Your tracking started on ${effectiveStartLabel}.`
+                : 'Tracking started on September 6, 2026.'}
             </p>
           </div>
 
@@ -1351,7 +1367,7 @@ function Reading() {
                   entries.length > 0
 
                 const isBeforeTracking =
-                  date < trackingStartDate
+                  date < effectiveStartDate
 
                 const isToday =
                   date === today
@@ -1669,15 +1685,16 @@ function Reading() {
                 </p>
 
                 {selectedDate <
-                trackingStartDate ? (
+                effectiveStartDate ? (
                   <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
                     <p className="font-medium text-gray-500">
                       — Not tracked
                     </p>
 
                     <p className="mt-1 text-sm text-gray-500">
-                      MicroRead tracking started
-                      on September 6, 2026.
+                      {joinedAfterTracking
+                        ? `You joined MicroRead on ${effectiveStartLabel}.`
+                        : 'MicroRead tracking started on September 6, 2026.'}
                     </p>
                   </div>
                 ) : selectedDateEntries.length >

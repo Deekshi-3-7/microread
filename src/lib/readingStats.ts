@@ -4,6 +4,22 @@ export function getTrackingStartDate(): string {
   return TRACKING_START_DATE
 }
 
+/**
+ * The date a member's history effectively begins: the later of the global
+ * tracking start and the day they joined. Days before this aren't "missed" —
+ * the person simply wasn't on MicroRead yet, so we treat them as untracked.
+ * `joinedDate` is a 'YYYY-MM-DD' string (lexicographically comparable).
+ */
+export function getEffectiveStartDate(
+  joinedDate?: string | null
+): string {
+  if (joinedDate && joinedDate > TRACKING_START_DATE) {
+    return joinedDate
+  }
+
+  return TRACKING_START_DATE
+}
+
 export function getTodayDate(): string {
   const today = new Date()
 
