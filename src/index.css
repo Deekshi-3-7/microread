@@ -380,6 +380,119 @@ h3 {
   animation: growWidth 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * Streak leader highlight: an animated gradient border whose colors sweep
+ * around the card edge (via a rotating conic-gradient + mask), plus a soft
+ * breathing brand glow. Draws the eye to the top streak without being loud.
+ * Under prefers-reduced-motion the global rule above freezes the rotation,
+ * leaving a tasteful static gradient border.
+ */
+@property --streak-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes streakRotate {
+  to {
+    --streak-angle: 360deg;
+  }
+}
+
+@keyframes streakGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 14px 0
+        color-mix(in srgb, var(--brand) 22%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 26px 4px
+        color-mix(in srgb, var(--brand) 42%, transparent);
+  }
+}
+
+.streak-leader {
+  position: relative;
+  isolation: isolate;
+  animation: streakGlow 2.4s ease-in-out infinite;
+}
+
+.streak-leader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--streak-angle),
+    var(--brand),
+    var(--brand-strong),
+    var(--brand-deep),
+    var(--brand-strong),
+    var(--brand)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: streakRotate 3.5s linear infinite;
+  pointer-events: none;
+}
+
+/*
+ * Border beam: a bright "comet" (fading tail + hot head) that revolves around
+ * the card edge, layered on top of the ambient gradient border above. Uses its
+ * own angle + speed so the two don't lock together.
+ */
+@property --beam-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes beamRotate {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+.streak-leader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg,
+    transparent 290deg,
+    color-mix(in srgb, var(--brand-strong) 40%, transparent)
+      332deg,
+    color-mix(in srgb, var(--brand-strong) 70%, #ffffff)
+      351deg,
+    #ffffff 357deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beamRotate 2.8s linear infinite;
+  pointer-events: none;
+}
+
+/* Keep the card's own content above the animated border layers. */
+.streak-leader > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* Stagger helpers for child reveals */
 .stagger > * {
   animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;

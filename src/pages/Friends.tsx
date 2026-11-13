@@ -221,6 +221,35 @@ export default function Friends() {
           }
         })
 
+      // Streak leaderboard: longest active streaks first, so friends can see
+      // who's leading and set a target to beat. Ties fall back to best streak,
+      // then days read, then name — keeping the order stable and fair.
+      progressData.sort((a, b) => {
+        if (
+          b.currentStreak !== a.currentStreak
+        ) {
+          return (
+            b.currentStreak - a.currentStreak
+          )
+        }
+
+        if (
+          b.longestStreak !== a.longestStreak
+        ) {
+          return (
+            b.longestStreak - a.longestStreak
+          )
+        }
+
+        if (b.readingDays !== a.readingDays) {
+          return b.readingDays - a.readingDays
+        }
+
+        return a.member.name.localeCompare(
+          b.member.name
+        )
+      })
+
       setFriends(progressData)
     } catch (error) {
       console.error(
@@ -299,6 +328,20 @@ export default function Friends() {
     (friend) => friend.booksCompleted > 0
   ).length
 
+  // friends is sorted by current streak, so the first with a live streak leads.
+  const streakLeader =
+    friends.find(
+      (friend) => friend.currentStreak > 0
+    ) ?? null
+
+  const topStreak =
+    streakLeader?.currentStreak ?? 0
+
+  const leaderName = streakLeader
+    ? streakLeader.member.name.split(' ')[0] ||
+      streakLeader.member.name
+    : ''
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
@@ -307,10 +350,32 @@ export default function Friends() {
         </h1>
 
         <p className="mt-1 text-gray-600">
-          See how everyone is progressing
-          together.
+          Ordered by reading streak — keep yours
+          alive and cheer each other on. 🔥
         </p>
       </div>
+
+      {topStreak > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-center gap-4">
+            <span className="brand-badge flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl">
+              🔥
+            </span>
+
+            <div>
+              <p className="text-base font-semibold text-gray-900">
+                {leaderName} leads with a{' '}
+                {topStreak}-day streak
+              </p>
+
+              <p className="mt-0.5 text-sm text-gray-600">
+                Let it inspire your own streak —
+                every reader lifts the group. 🌱
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {totalGroupCompleted > 0 && (
         <div className="brand-soft rounded-2xl p-5 sm:p-6">
@@ -360,18 +425,65 @@ export default function Friends() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {friends.map((friend) => (
+          {friends.map((friend, index) => {
+            const isLeader =
+              friend.currentStreak > 0 &&
+              friend.currentStreak === topStreak
+
+            const rankMedal =
+              friend.currentStreak > 0
+                ? index === 0
+                  ? '🥇'
+                  : index === 1
+                    ? '🥈'
+                    : index === 2
+                      ? '🥉'
+                      : `#${index + 1}`
+                : ''
+
+            const gap =
+              topStreak - friend.currentStreak
+
+            let streakTarget = ''
+
+            if (topStreak > 0) {
+              if (isLeader) {
+                streakTarget =
+                  '🔥 Leading the way — keep it up!'
+              } else if (
+                friend.currentStreak === 0
+              ) {
+                streakTarget =
+                  'Read today to begin your streak 🌱'
+              } else {
+                streakTarget = `🌱 ${gap} more day${
+                  gap === 1 ? '' : 's'
+                } to match ${leaderName}`
+              }
+            }
+
+            return (
             <Link
               key={friend.member.id}
               to={`/friends/${friend.member.id}`}
-              className="block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-gray-300 hover:shadow-md"
+              className={`block rounded-xl border bg-white p-6 shadow-sm transition hover:shadow-md ${
+                isLeader
+                  ? 'streak-leader border-transparent'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-lg font-semibold text-gray-700 dark:bg-[#cdd3dc] dark:text-[#16181d]">
+                  <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-100 text-lg font-semibold text-gray-700 dark:bg-[#cdd3dc] dark:text-[#16181d]">
                     {friend.member.name
                       .charAt(0)
                       .toUpperCase()}
+
+                    {rankMedal && (
+                      <span className="absolute -right-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border border-gray-200 bg-white px-1 text-xs font-bold text-gray-700 shadow-sm">
+                        {rankMedal}
+                      </span>
+                    )}
                   </div>
 
                   <div className="min-w-0">
@@ -510,6 +622,18 @@ export default function Friends() {
                 </div>
               </div>
 
+              {streakTarget && (
+                <p
+                  className={`mt-3 text-sm font-semibold ${
+                    isLeader
+                      ? 'text-[color:var(--brand)]'
+                      : 'text-gray-600'
+                  }`}
+                >
+                  {streakTarget}
+                </p>
+              )}
+
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-gray-50 px-4 py-3">
                   <p className="text-xs text-gray-500">
@@ -589,7 +713,8 @@ export default function Friends() {
                 </div>
               )}
             </Link>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -599,10 +724,10 @@ export default function Friends() {
         </h2>
 
         <p className="mt-2 text-sm leading-6 text-gray-600">
-          Everyone's journey is different.
-          The goal is not to compete, but to
-          stay consistent and keep taking
-          small steps every day.
+          Let a friend's streak inspire your next
+          one, and cheer each other on. There's no
+          race here — the real win is simply showing
+          up every day. 🌱
         </p>
       </div>
     </div>

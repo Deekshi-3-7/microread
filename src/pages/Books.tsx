@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { computeCurrentPageFromHistory } from '../lib/books'
 import TiltCard from '../components/TiltCard'
+import BookCover from '../components/BookCover'
 
 type BookStatus = 'reading' | 'completed' | 'paused'
 
@@ -735,11 +736,12 @@ Books </h1>
               className="hover-lift rounded-2xl bg-white p-6 shadow-sm"
             >
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                <div className="book-cover h-40 w-28 shrink-0 self-center p-3 sm:self-start">
-                  <span className="line-clamp-5 text-sm font-bold leading-tight">
-                    {book.title}
-                  </span>
-                </div>
+                <BookCover
+                  title={book.title}
+                  author={book.author}
+                  className="aspect-[2/3] w-28 shrink-0 self-center p-3 sm:self-start"
+                  textClassName="line-clamp-5 text-sm font-bold leading-tight"
+                />
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-col justify-between gap-4 sm:flex-row">
@@ -856,11 +858,12 @@ Books </h1>
           >
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
               <div className="flex items-center gap-4">
-                <div className="book-cover h-24 w-16 shrink-0 p-2">
-                  <span className="line-clamp-3 text-[11px] font-bold leading-tight">
-                    {book.title}
-                  </span>
-                </div>
+                <BookCover
+                  title={book.title}
+                  author={book.author}
+                  className="aspect-[2/3] w-16 shrink-0 p-2"
+                  textClassName="line-clamp-3 text-[11px] font-bold leading-tight"
+                />
 
                 <div className="min-w-0">
                   <h3 className="text-xl font-semibold text-gray-900">
