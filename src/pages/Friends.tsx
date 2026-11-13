@@ -9,6 +9,7 @@ import {
   formatDuration,
   timeOfDayEmoji,
 } from '../lib/readingStats'
+import { formatCompletionDate } from '../lib/celebration'
 
 type Member = {
   id: string
@@ -25,6 +26,7 @@ type Book = {
   total_pages: number
   current_page: number
   status: 'reading' | 'completed' | 'paused'
+  completion_date: string | null
 }
 
 type ReadingEntry = {
@@ -44,6 +46,7 @@ type FriendProgress = {
   currentStreak: number
   longestStreak: number
   booksCompleted: number
+  completedBooksList: Book[]
   readToday: boolean
   lastLogAt: string | null
 }
@@ -76,7 +79,7 @@ export default function Friends() {
         supabase
           .from('books')
           .select(
-            'id, member_id, title, author, total_pages, current_page, status'
+            'id, member_id, title, author, total_pages, current_page, status, completion_date'
           )
           // Newest first so the current-book pick matches Home / My Reading.
           .order('created_at', {
@@ -156,11 +159,22 @@ export default function Friends() {
               0
             )
 
+          const completedBooksList =
+            memberBooks
+              .filter(
+                (book) =>
+                  book.status === 'completed'
+              )
+              .sort((a, b) =>
+                (
+                  b.completion_date ?? ''
+                ).localeCompare(
+                  a.completion_date ?? ''
+                )
+              )
+
           const booksCompleted =
-            memberBooks.filter(
-              (book) =>
-                book.status === 'completed'
-            ).length
+            completedBooksList.length
 
           const todaysEntries =
             memberEntries.filter(
@@ -201,6 +215,7 @@ export default function Friends() {
                 memberEntries
               ),
             booksCompleted,
+            completedBooksList,
             readToday,
             lastLogAt,
           }
@@ -274,6 +289,16 @@ export default function Friends() {
     )
   }
 
+  const totalGroupCompleted = friends.reduce(
+    (total, friend) =>
+      total + friend.booksCompleted,
+    0
+  )
+
+  const friendsWithCompletions = friends.filter(
+    (friend) => friend.booksCompleted > 0
+  ).length
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
@@ -286,6 +311,37 @@ export default function Friends() {
           together.
         </p>
       </div>
+
+      {totalGroupCompleted > 0 && (
+        <div className="brand-soft rounded-2xl p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-2xl dark:bg-black/20">
+              🎉
+            </span>
+
+            <div>
+              <p className="text-base font-semibold text-gray-900">
+                {friendsWithCompletions}{' '}
+                {friendsWithCompletions === 1
+                  ? 'friend'
+                  : 'friends'}
+                {' · '}
+                {totalGroupCompleted}{' '}
+                {totalGroupCompleted === 1
+                  ? 'book'
+                  : 'books'}{' '}
+                completed
+              </p>
+
+              <p className="mt-0.5 text-sm text-gray-600">
+                Countless pages of progress —
+                open a profile to celebrate their
+                journey. 🌱
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {friends.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-10 text-center">
@@ -492,6 +548,46 @@ export default function Friends() {
                   </span>
                 </div>
               </div>
+
+              {friend.completedBooksList.length >
+                0 && (
+                <div className="brand-soft mt-3 rounded-lg px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">
+                      🏆
+                    </span>
+
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                      Latest achievement
+                    </span>
+                  </div>
+
+                  <p className="mt-1.5 truncate text-sm font-semibold text-gray-900">
+                    {
+                      friend
+                        .completedBooksList[0]
+                        .title
+                    }
+                  </p>
+
+                  <p className="truncate text-xs text-gray-500">
+                    {friend.completedBooksList[0]
+                      .completion_date
+                      ? `Finished ${formatCompletionDate(
+                          friend
+                            .completedBooksList[0]
+                            .completion_date
+                        )}`
+                      : 'Completed'}
+                    {friend.booksCompleted > 1
+                      ? ` · +${
+                          friend.booksCompleted -
+                          1
+                        } more`
+                      : ''}
+                  </p>
+                </div>
+              )}
             </Link>
           ))}
         </div>

@@ -11,6 +11,21 @@ import {
   formatLogTime,
   timeOfDayEmoji,
 } from '../lib/readingStats'
+import Celebration from '../components/Celebration'
+import {
+  profileCelebrationIsNew,
+  markProfileCelebrated,
+  pickMessage,
+  SELF_QUOTES,
+  FRIEND_QUOTES,
+  formatCompletionDate,
+} from '../lib/celebration'
+
+type CelebrationContent = {
+  title: string
+  message: string
+  items: { title: string; subtitle?: string }[]
+}
 
 type Member = {
   id: string
@@ -64,6 +79,8 @@ export default function FriendDetail() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [celebration, setCelebration] =
+    useState<CelebrationContent | null>(null)
 
   useEffect(() => {
     if (memberId) {
@@ -74,13 +91,21 @@ export default function FriendDetail() {
   async function loadMember(id: string) {
     setLoading(true)
     setError('')
+    // Clear any open celebration when switching profiles, so a previous
+    // friend's confetti card never lingers on the next one.
+    setCelebration(null)
 
     try {
       const [
+        {
+          data: { user },
+        },
         { data: memberData, error: memberError },
         { data: bookData, error: bookError },
         { data: entryData, error: entryError },
       ] = await Promise.all([
+        supabase.auth.getUser(),
+
         supabase
           .from('members')
           .select('id, name, email')
@@ -120,6 +145,73 @@ export default function FriendDetail() {
       setMember(memberData)
       setBooks((bookData ?? []) as Book[])
       setEntries((entryData ?? []) as Entry[])
+
+      // Celebrate this friend's finished books — once per friend, per session.
+      // profileCelebrationIsNew + markProfileCelebrated keep a refresh, re-render,
+      // or returning to the same profile this visit from replaying it.
+      const completed = ((bookData ?? []) as Book[])
+        .filter(
+          (book) =>
+            book.status === 'completed'
+        )
+        .sort((a, b) =>
+          (
+            b.completion_date ?? ''
+          ).localeCompare(
+            a.completion_date ?? ''
+          )
+        )
+
+      if (
+        completed.length > 0 &&
+        profileCelebrationIsNew(id)
+      ) {
+        // Frame the copy for who's reading it: your own profile congratulates
+        // you; a friend's profile celebrates them, so it never sounds like
+        // we're congratulating the viewer for someone else's work.
+        const isSelf =
+          !!user?.email &&
+          user.email.toLowerCase() ===
+            (memberData.email ?? '').toLowerCase()
+
+        const count = completed.length
+        const firstName =
+          memberData.name.split(' ')[0] ||
+          memberData.name
+
+        const title = isSelf
+          ? count === 1
+            ? 'Another book conquered! 🎉'
+            : `${count} books conquered! 🎉`
+          : count === 1
+            ? `${firstName} conquered a book! 🎉`
+            : `${firstName} conquered ${count} books! 🎉`
+
+        const message = isSelf
+          ? `Congratulations! ${pickMessage(
+              SELF_QUOTES
+            )}`
+          : `Cheers to ${firstName}! ${pickMessage(
+              FRIEND_QUOTES
+            )}`
+
+        setCelebration({
+          title,
+          message,
+          items: completed.map((book) => ({
+            title: book.title,
+            subtitle: `${book.author}${
+              book.completion_date
+                ? ` · Finished ${formatCompletionDate(
+                    book.completion_date
+                  )}`
+                : ''
+            }`,
+          })),
+        })
+
+        markProfileCelebrated(id)
+      }
     } catch (err) {
       console.error(
         'Failed to load friend detail:',
@@ -249,6 +341,14 @@ export default function FriendDetail() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <Celebration
+        open={!!celebration}
+        title={celebration?.title ?? ''}
+        message={celebration?.message ?? ''}
+        items={celebration?.items ?? []}
+        onClose={() => setCelebration(null)}
+      />
+
       <Link
         to="/friends"
         className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-gray-900"
@@ -513,7 +613,8 @@ export default function FriendDetail() {
 
         {completedBooks.length === 0 ? (
           <p className="mt-4 text-sm text-gray-500">
-            No books finished yet.
+            No books finished yet — every reading
+            journey starts with a single page. 🌱
           </p>
         ) : (
           <div className="mt-5 space-y-3">
@@ -540,17 +641,24 @@ export default function FriendDetail() {
               return (
                 <div
                   key={book.id}
-                  className="rounded-xl bg-gray-50 p-4"
+                  className="brand-soft rounded-xl p-4"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-gray-900">
-                        {book.title}
-                      </p>
-                      <p className="truncate text-sm text-gray-500">
-                        {book.author} ·{' '}
-                        {book.total_pages} pages
-                      </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 text-lg dark:bg-black/20">
+                        🏅
+                      </span>
+
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-gray-900">
+                          {book.title}
+                        </p>
+                        <p className="truncate text-sm text-gray-500">
+                          {book.author} ·{' '}
+                          {book.total_pages}{' '}
+                          pages
+                        </p>
+                      </div>
                     </div>
 
                     <p className="shrink-0 text-sm text-gray-500">
